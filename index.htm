@@ -140,7 +140,7 @@
             display: flex; flex-direction: column; gap: 5px; align-items: center;
             margin-bottom: 5px;
         }
-        .season-text { color: #facc15; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+        .season-text { color: #facc15; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
 
         .main-content-area {
             flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -295,7 +295,7 @@
 </head>
 <body>
     <!-- 賽季1 背景音樂 -->
-    <audio id="bgm-season1" src="https://ltmps-chusiuhin.github.io/rhythm_game/30.mp3" preload="auto" style="display:none;"></audio>
+    <audio id="bgm-season1" src="https://ltmps-chusiuhin.github.io/rhythm-game/30.mp3" preload="auto" style="display:none;"></audio>
     <audio id="bgmPlayer" style="display:none;"></audio>
 
     <div class="bg-layer">
@@ -328,7 +328,7 @@
                 <h1>藍循節奏大師</h1>
                 <p class="subtitle">先聆聽四拍節奏，然後擊打出相同的節奏。</p>
                 <div class="season-banner" style="display: flex; flex-direction: column; gap: 5px; border-radius: 15px; padding: 10px 25px; height: auto;">
-                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);">賽季1：2026年10月21日至11月1日</span>
+                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);"> *藍循三十周年校慶特別版* 賽季1：2026年10月21日至11月1日</span>
                 </div>
             </div>
             
@@ -499,8 +499,8 @@
         
         const SEASON1_BPM = 75; // 樂曲速度 (BPM)
         const SEASON1_MUSIC_START_DELAY = 1.0; // 按下開始後，等待多少秒才開始播放音樂
-        const SEASON1_CHART_OFFSET = 0.0; // 譜面延遲 (秒)：正數代表譜面延後出現，負數代表提早 (用以微調音樂與節拍的同步)
-        const SEASON1_NOTE_FLIGHT_TIME = 2.0; // 音符從畫面右側飛到判定線所需的時間（秒）
+        const SEASON1_CHART_OFFSET = 1.52; // 譜面延遲 (秒)：正數代表譜面延後出現，負數代表提早 (用以微調音樂與節拍的同步)
+        const SEASON1_NOTE_FLIGHT_TIME = 3.0; // 音符從畫面右側飛到判定線所需的時間（秒）
         
         // 譜面設定：每個字元代表一個「十六分音符」的長度 (1 = 擊打, 0 = 休止)
         // 自動忽略所有空格，方便你排版對齊
@@ -590,7 +590,7 @@
                 'survival': "生存模式：無盡挑戰直至出現3次失誤，挑戰你的集中力。",
                 'vanishing-survival': "消存模式：消失與生存的混合模式，大師級的終極試練！",
                 'progressive': "漸進模式：無盡挑戰直至出現5次失誤，難度將逐漸提升。",
-                'season1': "賽季1：配合指定音樂(30.mp3)進行特定節奏擊打！"
+                'season1': "賽季1：一邊欣賞三十周年主題曲一邊擊打節奏！"
             }
         };
 
@@ -849,6 +849,7 @@
                 else if(type === 'p1') { o.type = 'triangle'; f.type = 'lowpass'; f.frequency.value = 1000; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t+0.15); g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.01, t+0.25); o.start(t); o.stop(t+0.3); }
                 else if(type === 'p2') { o.type = 'sine'; f.type = 'lowpass'; f.frequency.value = 1500; o.frequency.setValueAtTime(400, t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.3, t+0.02); g.gain.exponentialRampToValueAtTime(0.01, t+0.3); o.start(t); o.stop(t+0.35); }
                 else if(type === 'metro') { o.type = 'square'; f.type = 'highpass'; f.frequency.value = 2500; o.frequency.setValueAtTime(800, t); g.gain.setValueAtTime(0.03, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.05); o.start(t); o.stop(t+0.05); }
+                else if(type === 'bell') { o.type = 'sine'; f.type = 'lowpass'; f.frequency.value = 2000; o.frequency.setValueAtTime(1046.5, t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.02, t+0.01); g.gain.exponentialRampToValueAtTime(0.001, t+0.5); o.start(t); o.stop(t+0.55); }
             }
         };
         const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
@@ -871,6 +872,15 @@
         }
         
         function startGame() {
+            const bgm = document.getElementById('bgm-season1');
+            if (config.mode === 'season1' && bgm) {
+                // 為解決瀏覽器安全策略，在按鈕點擊當下先獲取播放權限並暫停
+                bgm.play().then(() => {
+                    bgm.pause();
+                    bgm.currentTime = 0;
+                }).catch(e => console.log("Init BGM Error", e));
+            }
+
             if(document.activeElement) document.activeElement.blur(); AudioEngine.init(); VFX.init();
             
             if (config.mode === 'season1') {
@@ -1056,21 +1066,24 @@
                     c.strokeStyle = "white"; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
                     c.fillStyle = "rgba(255,255,255,0.3)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
                     
-                    // 繪製歌詞文字在音符中間，加入黑粗邊與白發光效果使其更明顯
+                    // 繪製歌詞文字在音符中間，加入色彩繽紛的特效
                     if (n.lyric) {
                         c.font = "900 34px 'Segoe UI', sans-serif";
                         c.textAlign = "center";
                         c.textBaseline = "middle";
                         
-                        // 黑色外框
+                        // 使用基於 index 的動態色彩 (彩虹漸變效果)
+                        let hue = (n.index * 15) % 360;
+                        
+                        // 彩色外框
                         c.lineWidth = 5;
-                        c.strokeStyle = "#000";
+                        c.strokeStyle = `hsl(${hue}, 90%, 40%)`;
                         c.strokeText(n.lyric, x, y + 2);
                         
-                        // 白色字體與發光
+                        // 白色字體與同色系發光
                         c.fillStyle = "#fff";
                         c.shadowBlur = 15;
-                        c.shadowColor = "#fff";
+                        c.shadowColor = `hsl(${hue}, 100%, 60%)`;
                         c.fillText(n.lyric, x, y + 2);
                         
                         // 重置陰影以免影響後續繪製
@@ -1087,7 +1100,11 @@
             if(config.players === 1 && pid === 2) return;
             const now = AudioEngine.ctx.currentTime; const data = pid === 1 ? session.p1 : session.p2;
             const y = config.players === 1 ? height/2 : (pid===1 ? height*0.28 : height*0.72);
-            AudioEngine.play(pid === 1 ? 'p1' : 'p2', now);
+            
+            let sfx = pid === 1 ? 'p1' : 'p2';
+            if (config.mode === 'season1' && pid === 1) sfx = 'bell';
+            AudioEngine.play(sfx, now);
+            
             data.bump = 1.2; 
             let best = null, minDiff = Infinity;
             data.notes.forEach(n => {
