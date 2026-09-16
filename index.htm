@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>藍循節奏大師</title>
+    <title>藍循節奏大師：1.0正式版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     
@@ -506,7 +506,7 @@
         // 自動忽略所有空格，方便你排版對齊
         const SEASON1_MAP = "10 10000010 10000010 10000010 10000010 10000010 10000010 10010010 10000010 10000010 10000011 10101011 00000010 10110011 10010010 10010010      10000000 00000010 10000010 10000011 10101011 00000010 10000010 10000010 10101011 00000010 10000010 10000011 10101011 00000010 10110011 10010010 10101011      00000011 10101011 00000011 10101011 00000011 10101011 00000011 10010010 10000000 00101010 10010011 10101010 00100000 00101010 10010010 10101010 10110000      00101010 10010011 10101010 10010010 10000010 10110010 10010010 10000000 00000000";
         
-        // 歌詞設定：系統會自動去除空格，並從第 41 個音符 (index: 40) 開始將中文字放入音符中
+        // 歌詞設定：系統會自動去除空格，並從第 42 個音符 (index: 41) 開始將中文字放入音符中
         const SEASON1_LYRICS = "藍天碧海春風化雨暖我心無盡 旅途 伴快樂一世間耶穌恩典早已充滿我心裏勤學求道效主愛人樂與學在藍循我在長廊裏禱告你在球場上散步帶着疑問與苦惱也會為我引路我結伴同行邁向天際遇星河書海內奮鬥得到知識再破巨浪你我在藍循實—踐那美夢全然綻放用新世界的光去共創".replace(/\s+/g, '');
         
         // ==========================================
@@ -923,8 +923,8 @@
                     let targetTime = musicStartTime + SEASON1_CHART_OFFSET + (i * sixteenthDuration);
                     
                     let char = "";
-                    // 從第 41 個音符 (index: 40) 開始塞入中文字
-                    if (noteCount >= 40 && lyricIndex < SEASON1_LYRICS.length) {
+                    // 從第 42 個音符 (index: 41) 開始塞入中文字
+                    if (noteCount >= 41 && lyricIndex < SEASON1_LYRICS.length) {
                         char = SEASON1_LYRICS[lyricIndex];
                         lyricIndex++;
                     }
@@ -1056,15 +1056,25 @@
                     c.strokeStyle = "white"; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
                     c.fillStyle = "rgba(255,255,255,0.3)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
                     
-                    // 新增：繪製歌詞文字在音符中間
+                    // 繪製歌詞文字在音符中間，加入黑粗邊與白發光效果使其更明顯
                     if (n.lyric) {
-                        c.fillStyle = "white";
-                        c.font = "900 26px 'Segoe UI', sans-serif";
+                        c.font = "900 34px 'Segoe UI', sans-serif";
                         c.textAlign = "center";
                         c.textBaseline = "middle";
-                        c.shadowBlur = 4;
-                        c.shadowColor = "rgba(0,0,0,0.8)";
-                        c.fillText(n.lyric, x, y + 2); // 微調 y 軸使其視覺置中
+                        
+                        // 黑色外框
+                        c.lineWidth = 5;
+                        c.strokeStyle = "#000";
+                        c.strokeText(n.lyric, x, y + 2);
+                        
+                        // 白色字體與發光
+                        c.fillStyle = "#fff";
+                        c.shadowBlur = 15;
+                        c.shadowColor = "#fff";
+                        c.fillText(n.lyric, x, y + 2);
+                        
+                        // 重置陰影以免影響後續繪製
+                        c.shadowBlur = 0; 
                     }
                     
                     c.restore();
