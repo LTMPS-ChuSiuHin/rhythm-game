@@ -126,11 +126,11 @@
         }
         
         #season1-slogan-top {
-            top: calc(50% - 130px);
+            top: calc(50% - 180px); /* 距離中央音軌更遠 */
         }
         
         #season1-slogan-bottom {
-            top: calc(50% + 90px);
+            top: calc(50% + 140px); /* 距離中央音軌更遠 */
         }
 
         .s1-slogan span {
@@ -339,8 +339,8 @@
             .cat-btn { padding: 5px 10px; font-size: 11px; }
             .comp-grid { max-height: 250px; }
             .s1-slogan { font-size: 36px; gap: 10px; }
-            #season1-slogan-top { top: calc(50% - 110px); }
-            #season1-slogan-bottom { top: calc(50% + 70px); }
+            #season1-slogan-top { top: calc(50% - 150px); }
+            #season1-slogan-bottom { top: calc(50% + 110px); }
         }
     </style>
 </head>
@@ -704,9 +704,19 @@
             timeouts.forEach(clearTimeout);
             if (animId) cancelAnimationFrame(animId);
             
+            // 清除漸弱動畫的計時器
+            if (session.fadeInterval) {
+                clearInterval(session.fadeInterval);
+                session.fadeInterval = null;
+            }
+            
             // 停止背景音樂及隱藏賽季1專屬字句
             const bgmSeason = document.getElementById('bgm-season1');
-            if(bgmSeason) { bgmSeason.pause(); bgmSeason.currentTime = 0; }
+            if(bgmSeason) { 
+                bgmSeason.pause(); 
+                bgmSeason.currentTime = 0; 
+                bgmSeason.volume = 1.0; 
+            }
             if(AudioEngine.ctx && AudioEngine.ctx.state === 'running') { AudioEngine.ctx.suspend().then(()=>AudioEngine.ctx.resume()); }
             
             document.getElementById('season1-slogan-top').classList.remove('visible');
@@ -1001,6 +1011,7 @@
             const bgm = document.getElementById('bgm-season1');
             if (config.mode === 'season1' && bgm) {
                 // 為解決瀏覽器安全策略，在按鈕點擊當下先獲取播放權限並暫停
+                bgm.volume = 1.0;
                 bgm.play().then(() => {
                     bgm.pause();
                     bgm.currentTime = 0;
@@ -1043,7 +1054,7 @@
         // 賽季1的專屬生成與排程函數
         function startSeason1Mode() {
             const bgm = document.getElementById('bgm-season1');
-            if (bgm) bgm.currentTime = 0;
+            if (bgm) { bgm.currentTime = 0; bgm.volume = 1.0; }
             
             const now = AudioEngine.ctx.currentTime;
             const musicStartTime = now + SEASON1_MUSIC_START_DELAY; // 音樂正式開始播放的絕對時間
@@ -1090,8 +1101,30 @@
             
             notify("準備開始", "var(--comp-gold)");
             
-            // 設定遊戲在最後一顆音符結束後的2.5秒自動進入結算畫面
+            // 設定遊戲在最後一顆音符結束後的音樂漸弱 (Fade Out)
             let durationToLastNote = lastNoteTarget > 0 ? (lastNoteTarget - now) : 5;
+            
+            timeouts.push(setTimeout(() => {
+                if (gameState === 'PLAYING' && bgm) {
+                    let fadeSteps = 20;
+                    let fadeOutTime = 2.0; // 2秒內漸弱
+                    let intervalTime = (fadeOutTime * 1000) / fadeSteps;
+                    let volumeStep = 1.0 / fadeSteps;
+                    
+                    session.fadeInterval = setInterval(() => {
+                        if (bgm.volume > volumeStep) {
+                            bgm.volume -= volumeStep;
+                        } else {
+                            bgm.volume = 0;
+                            bgm.pause();
+                            clearInterval(session.fadeInterval);
+                            session.fadeInterval = null;
+                        }
+                    }, intervalTime);
+                }
+            }, (durationToLastNote + 0.5) * 1000));
+            
+            // 在漸弱完全結束後才進入結算畫面
             timeouts.push(setTimeout(() => {
                 if (gameState === 'PLAYING') endGame();
             }, (durationToLastNote + 2.5) * 1000));
@@ -1217,12 +1250,17 @@
                         c.shadowColor = `hsl(${hue}, 100%, 60%)`;
                         c.fillText(n.lyric, x, y + 2);
                         
+                        // 重置陰影以免影響後續繪製
                         c.shadowBlur = 0; 
                     }
                     
                     c.restore();
                 }
-                if(dt < -WINDOWS.MISS && !n.missed) { n.missed = true; handleResult(pid, 'MISS'); showFeedback('MISS', HIT_X, y, 'var(--rank-d)'); }
+                if(dt < -WINDOWS.MISS && !n.missed) { 
+                    n.missed = true; 
+                    handleResult(pid, 'MISS'); 
+                    showFeedback('MISS', HIT_X, y, 'var(--rank-d)'); 
+                }
             });
         }
         function handleInput(pid) {
@@ -1248,13 +1286,20 @@
             }
         }
         function handleResult(pid, rating) {
-            const data = pid === 1 ? session.p1 : session.p2; const isSurvival = config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1';
+            const data = pid === 1 ? session.p1 : session.p2; 
+            const isSurvival = config.mode.includes('survival') || config.mode === 'progressive';
             let multiplier = getScoreMultiplier();
+            
             if(rating === 'PERFECT' || rating === 'GOOD') { 
                 data.combo++; if(data.combo > data.maxCombo) data.maxCombo = data.combo;
                 if(data.combo >= 10 && data.combo % 10 === 0) { const y = config.players === 1 ? height/2 : (pid===1 ? height*0.28 : height*0.72); showCombo(data.combo, HIT_X, y - 50); }
                 if(rating === 'PERFECT') { data.score += Math.round(100 * multiplier); data.stats.p++; } else { data.score += Math.round(50 * multiplier); data.stats.g++; }
-            } else { data.stats.m++; data.combo = 0; if(isSurvival) loseLife(pid); }
+            } else { 
+                data.stats.m++; 
+                data.combo = 0; 
+                // 只有非賽季1的生存模式才會扣除生命
+                if(isSurvival) loseLife(pid); 
+            }
             updateHUD();
         }
         function showCombo(count, x, y) {
@@ -1272,8 +1317,17 @@
         }
         function updateHUD() {
             document.getElementById('p1-score').innerText = session.p1.score; document.getElementById('p2-score').innerText = session.p2.score;
-            const isSurvivalMode = config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1';
-            if(isSurvivalMode) { renderHearts('p1-lives', session.p1.lives); renderHearts('p2-lives', session.p2.lives); } else { document.getElementById('p1-lives').innerHTML = ""; document.getElementById('p2-lives').innerHTML = ""; }
+            
+            // 賽季1不顯示生命值
+            const isSurvivalMode = config.mode.includes('survival') || config.mode === 'progressive';
+            if(isSurvivalMode) { 
+                renderHearts('p1-lives', session.p1.lives); 
+                renderHearts('p2-lives', session.p2.lives); 
+            } else { 
+                document.getElementById('p1-lives').innerHTML = ""; 
+                document.getElementById('p2-lives').innerHTML = ""; 
+            }
+            
             let rTxt = `ROUND ${session.round}`;
             if(config.mode === 'season1') rTxt = 'MUSIC MODE';
             else if(!config.mode.includes('survival') && config.mode !== 'progressive') rTxt += ` / ${config.rounds}`; 
@@ -1285,8 +1339,13 @@
         function endGame() {
             gameState = 'END'; document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('result-screen').classList.add('active'); timeouts.forEach(clearTimeout);
             
+            if (session.fadeInterval) {
+                clearInterval(session.fadeInterval);
+                session.fadeInterval = null;
+            }
+            
             const bgmSeason = document.getElementById('bgm-season1');
-            if(bgmSeason) { bgmSeason.pause(); }
+            if(bgmSeason) { bgmSeason.pause(); bgmSeason.volume = 1.0; } // 確保結束時重置音量
             
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
