@@ -2,14 +2,12 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>藍循節奏大師：1.0正式版</title>
+    <title>藍循節奏大師</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <!-- 加入 Google Identity Services SDK 以支援 OAuth -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
             /* Theme Colors */
@@ -30,6 +28,7 @@
             
             /* Competition Specific */
             --comp-gold: #fbbf24;
+            --prog-color: #a78bfa;
             
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
@@ -201,7 +200,8 @@
         .toggle-btn[data-mode="vanishing"].active { color: #d946ef; border-color: #d946ef; background: rgba(217, 70, 239, 0.2); }
         .toggle-btn[data-mode="survival"].active { color: #facc15; border-color: #facc15; background: rgba(250, 204, 21, 0.2); }
         .toggle-btn[data-mode="vanishing-survival"].active { color: #f87171; border-color: #f87171; background: rgba(248, 113, 113, 0.2); }
-        .toggle-btn[data-mode="competition"].active { color: var(--comp-gold); border-color: var(--comp-gold); background: rgba(251, 191, 36, 0.2); box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+        .toggle-btn[data-mode="progressive"].active { color: var(--prog-color); border-color: var(--prog-color); background: rgba(167, 139, 250, 0.2); box-shadow: 0 0 15px rgba(167, 139, 250, 0.3); }
+        .toggle-btn[data-mode="season1"].active { color: var(--comp-gold); border-color: var(--comp-gold); background: rgba(251, 191, 36, 0.2); box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
         .toggle-btn[data-val="2"].active { color: var(--p2-color); border-color: var(--p2-color); background: rgba(244, 114, 182, 0.2); }
 
         .screen-footer { flex-shrink: 0; width: 100%; margin-top: 20px; }
@@ -294,6 +294,8 @@
     </style>
 </head>
 <body>
+    <!-- 賽季1 背景音樂 -->
+    <audio id="bgm-season1" src="https://ltmps-chusiuhin.github.io/rhythm_game/30.mp3" preload="auto" style="display:none;"></audio>
     <audio id="bgmPlayer" style="display:none;"></audio>
 
     <div class="bg-layer">
@@ -346,7 +348,8 @@
                             <button class="toggle-btn" data-mode="vanishing" onclick="setMode('vanishing')">消失</button>
                             <button class="toggle-btn" data-mode="survival" onclick="setMode('survival')">生存</button>
                             <button class="toggle-btn" data-mode="vanishing-survival" onclick="setMode('vanishing-survival')">消存</button>
-                            <button class="toggle-btn" data-mode="competition" onclick="setMode('competition')">賽季1</button>
+                            <button class="toggle-btn" data-mode="progressive" onclick="setMode('progressive')">漸進</button>
+                            <button class="toggle-btn" data-mode="season1" onclick="setMode('season1')">賽季1</button>
                         </div>
                     </div>
                     <div id="mode-desc" class="mode-description">載入說明中...</div>
@@ -416,7 +419,8 @@
                         <button class="mode-tab" id="menu-lb-vanishing" onclick="switchLBMode('vanishing')">消失</button>
                         <button class="mode-tab" id="menu-lb-survival" onclick="switchLBMode('survival')">生存</button>
                         <button class="mode-tab" id="menu-lb-vanishing-survival" onclick="switchLBMode('vanishing-survival')">消存</button>
-                        <button class="mode-tab" id="menu-lb-competition" onclick="switchLBMode('competition')">賽季1</button>
+                        <button class="mode-tab" id="menu-lb-progressive" onclick="switchLBMode('progressive')">漸進</button>
+                        <button class="mode-tab" id="menu-lb-season1" onclick="switchLBMode('season1')">賽季1</button>
                     </div>
                 </div>
             </div>
@@ -425,13 +429,13 @@
 
         <div id="competition-screen" class="screen">
             <div class="screen-header">
-                <h1 style="color:var(--comp-gold); text-shadow: 0 0 30px var(--comp-gold);">賽季龍虎榜</h1>
+                <h1 style="color:var(--comp-gold); text-shadow: 0 0 30px var(--comp-gold);">賽季龍虎榜 (即時)</h1>
                 <p class="subtitle">每級首三名可獲 AE 分 100分</p>
             </div>
             <div class="scroll-content">
                 <div class="leaderboard-section active" style="max-width: 800px; width: 100%;">
                     <div class="lb-category-container" style="margin-bottom: 15px;">
-                        <button class="cat-btn active" id="comp-tab-1" onclick="switchCompSeason(1)">第一賽季 (2026年10月21日至11月1日)</button>
+                        <button class="cat-btn active" id="comp-tab-1">第一賽季 (2026年10月21日至11月1日)</button>
                     </div>
                     <div class="comp-grid" id="comp-grid-container">
                         <div style="text-align:center; padding:20px; grid-column:1/-1; color:#aaa;">讀取比賽數據中...</div>
@@ -489,37 +493,28 @@
     </div>
     
     <script>
+        // ==========================================
+        // 🎵 賽季1：自定義音樂與譜面參數設定 🎵
+        // ==========================================
+        
+        const SEASON1_BPM = 75; // 樂曲速度 (BPM)
+        const SEASON1_MUSIC_START_DELAY = 1.0; // 按下開始後，等待多少秒才開始播放音樂
+        const SEASON1_CHART_OFFSET = 0.0; // 譜面延遲 (秒)：正數代表譜面延後出現，負數代表提早 (用以微調音樂與節拍的同步)
+        const SEASON1_NOTE_FLIGHT_TIME = 2.0; // 音符從畫面右側飛到判定線所需的時間（秒）
+        
+        // 譜面設定：每個字元代表一個「十六分音符」的長度 (1 = 擊打, 0 = 休止)
+        // 自動忽略所有空格，方便你排版對齊
+        const SEASON1_MAP = "10 10000010 10000010 10000010 10000010 10000010 10000010 10010010 10000010 10000010 10000011 10101011 00000010 10110011 10010010 10010010      10000000 00000010 10000010 10000011 10101011 00000010 10000010 10000010 10101011 00000010 10000010 10000011 10101011 00000010 10110011 10010010 10101011      00000011 10101011 00000011 10101011 00000011 10101011 00000011 10010010 10000000 00101010 10010011 10101010 00100000 00101010 10010010 10101010 10110000      00101010 10010011 10101010 10010010 10000010 10110010 10010010 10000000 00000000";
+        
+        // 歌詞設定：系統會自動去除空格，並從第 41 個音符 (index: 40) 開始將中文字放入音符中
+        const SEASON1_LYRICS = "藍天碧海春風化雨暖我心無盡 旅途 伴快樂一世間耶穌恩典早已充滿我心裏勤學求道效主愛人樂與學在藍循我在長廊裏禱告你在球場上散步帶着疑問與苦惱也會為我引路我結伴同行邁向天際遇星河書海內奮鬥得到知識再破巨浪你我在藍循實—踐那美夢全然綻放用新世界的光去共創".replace(/\s+/g, '');
+        
+        // ==========================================
+
         const firebaseConfig = { apiKey: "AIzaSyD4rb1PhX9TCxj8VORCnZW8Ik6HPDZk8NE", authDomain: "ltmps-rhythm-game.firebaseapp.com", projectId: "ltmps-rhythm-game", storageBucket: "ltmps-rhythm-game.firebasestorage.app", messagingSenderId: "1035907577062", appId: "1:1035907577062:web:0c7e1625fa4c22a9aff727" };
         let db;
         let isLBLocked = false;
         let lockDocRef = null;
-        let isGoogleLoggedIn = false;
-        let googleUserInfo = null;
-        let tokenClient;
-
-        window.onload = function () {
-            if (window.google) {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: '573911894747-0c28hfr0bmkjnn8pkm2msg6sjal1thqe.apps.googleusercontent.com',
-                    scope: 'email profile',
-                    callback: (tokenResponse) => {
-                        if (tokenResponse && tokenResponse.access_token) {
-                            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-                            }).then(res => res.json()).then(data => {
-                                isGoogleLoggedIn = true;
-                                googleUserInfo = data;
-                                alert("Google 登入成功！歡迎，" + data.name);
-                                setModeInternal('competition');
-                            }).catch(err => {
-                                console.error("Error fetching user info:", err);
-                                alert("獲取用戶資訊失敗，請重試。");
-                            });
-                        }
-                    }
-                });
-            }
-        };
 
         try { 
             if (firebaseConfig.apiKey !== "您的_API_KEY") { 
@@ -551,7 +546,6 @@
         function setLockState(locked) {
             if (lockDocRef) {
                 lockDocRef.set({ locked: locked }, { merge: true }).then(() => {
-                    // Success
                 }).catch(err => {
                     console.error("無法更新雲端狀態", err);
                     alert("更新雲端狀態失敗！請檢查 Firebase 資料庫的寫入權限是否已開放。");
@@ -595,17 +589,9 @@
                 'vanishing': "消失模式：音符會在途中消失，考驗你對節奏的記憶力。",
                 'survival': "生存模式：無盡挑戰直至出現3次失誤，挑戰你的集中力。",
                 'vanishing-survival': "消存模式：消失與生存的混合模式，大師級的終極試練！",
-                'competition': "賽季1：重溫第一賽季的挑戰！無盡挑戰直至出現5次失誤，難度將逐漸提升。需登入 Google 帳號。"
+                'progressive': "漸進模式：無盡挑戰直至出現5次失誤，難度將逐漸提升。",
+                'season1': "賽季1：配合指定音樂(30.mp3)進行特定節奏擊打！"
             }
-        };
-
-        const SEASON_1_RESULTS = {
-            1: [ {classId: "1B", name: "22", score: 19550}, {classId: "1E", name: "01", score: 17100}, {classId: "1B", name: "11", score: 12150}, {classId: "1D", name: "17", score: 10600}, {classId: "1D", name: "07", score: 8300} ],
-            2: [ {classId: "2A", name: "12", score: 9700}, {classId: "2D", name: "05", score: 8850}, {classId: "2B", name: "07", score: 7800}, {classId: "2E", name: "19", score: 7750}, {classId: "2D", name: "15", score: 7550} ],
-            3: [ {classId: "3B", name: "07", score: 11100}, {classId: "3A", name: "27", score: 10700}, {classId: "3C", name: "02", score: 9300}, {classId: "3B", name: "04", score: 9250}, {classId: "3A", name: "26", score: 9200} ],
-            4: [ {classId: "4E", name: "01", score: 28000}, {classId: "4A", name: "12", score: 13850}, {classId: "4B", name: "05", score: 13600}, {classId: "4A", name: "07", score: 12300}, {classId: "4B", name: "08", score: 9450} ],
-            5: [ {classId: "5B", name: "22", score: 12350}, {classId: "5E", name: "07", score: 11650}, {classId: "5E", name: "03", score: 10750}, {classId: "5B", name: "17", score: 9700}, {classId: "5D", name: "20", score: 8150} ],
-            6: [ {classId: "6E", name: "01", score: 64150}, {classId: "6A", name: "11", score: 38800}, {classId: "6E", name: "18", score: 37650}, {classId: "6A", name: "20", score: 22300}, {classId: "6C", name: "06", score: 15650} ]
         };
 
         function showMenu() { 
@@ -618,7 +604,12 @@
             gameState = 'MENU';
             timeouts.forEach(clearTimeout);
             if (animId) cancelAnimationFrame(animId);
+            
+            // 停止背景音樂
+            const bgmSeason = document.getElementById('bgm-season1');
+            if(bgmSeason) { bgmSeason.pause(); bgmSeason.currentTime = 0; }
             if(AudioEngine.ctx && AudioEngine.ctx.state === 'running') { AudioEngine.ctx.suspend().then(()=>AudioEngine.ctx.resume()); }
+            
             showMenu();
         }
 
@@ -631,10 +622,11 @@
             if(config.mode.includes('vanishing')) mColor = '#d946ef';
             if(config.mode.includes('survival')) mColor = '#facc15';
             if(config.mode === 'vanishing-survival') mColor = '#f87171';
-            if(config.mode === 'competition') mColor = 'var(--comp-gold)';
+            if(config.mode === 'progressive') mColor = 'var(--prog-color)';
+            if(config.mode === 'season1') mColor = 'var(--comp-gold)';
             if(el) { el.innerHTML = `<div><span style="color:${pColor}; font-weight:bold;">[${config.players}P]</span> ${pText}</div><div style="margin-top:3px;"><span style="color:${mColor}; font-weight:bold;">[${getModeName(config.mode)}]</span> ${mText}</div>`; }
         }
-        function getModeName(m) { const names = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'competition':'賽季1'}; return names[m] || m; }
+        function getModeName(m) { const names = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}; return names[m] || m; }
         function setUploadRole(role) { uploadRole = role; document.getElementById('role-student').classList.toggle('active', role === 'student'); document.getElementById('role-guest').classList.toggle('active', role === 'guest'); document.getElementById('input-student-row').style.display = role === 'student' ? 'flex' : 'none'; document.getElementById('input-guest-row').style.display = role === 'guest' ? 'flex' : 'none'; }
         function switchLBCategory(cat) { currentLB.category = cat; document.querySelectorAll('#lb-category-tabs .cat-btn').forEach(b => b.classList.remove('active')); document.getElementById(`cat-${cat}`).classList.add('active'); const filters = document.getElementById('lb-filters'); const fGrade = document.getElementById('filter-grade'); const fClass = document.getElementById('filter-class'); if(cat === 'class') { filters.style.display = 'flex'; fGrade.style.display = 'block'; fClass.style.display = 'block'; } else if (cat === 'grade') { filters.style.display = 'flex'; fGrade.style.display = 'block'; fClass.style.display = 'none'; } else { filters.style.display = 'none'; } refreshLB(); }
         
@@ -656,19 +648,7 @@
             refreshLB(); 
         }
         
-        function setMode(m) {
-            if (m === 'competition' && !isGoogleLoggedIn) {
-                if (tokenClient) {
-                    tokenClient.requestAccessToken();
-                } else {
-                    alert("Google 登入服務未載入，請刷新頁面重試。");
-                }
-                return;
-            }
-            setModeInternal(m);
-        }
-
-        function setModeInternal(m) { 
+        function setMode(m) { 
             config.mode = m; 
             document.querySelectorAll('.toggle-btn[data-mode]').forEach(b => b.classList.remove('active')); 
             document.querySelector(`.toggle-btn[data-mode="${m}"]`).classList.add('active'); 
@@ -681,7 +661,7 @@
             
             rg.classList.remove('disabled'); ds.classList.remove('disabled'); ss.classList.remove('disabled'); pGroup.classList.remove('disabled');
 
-            if(m === 'competition') {
+            if(m === 'progressive' || m === 'season1') {
                 rg.classList.add('disabled'); ds.classList.add('disabled'); ss.classList.add('disabled'); pGroup.classList.add('disabled');
                 setPlayers(1);
                 document.getElementById('speed-select').value = "95";
@@ -693,8 +673,8 @@
         }
         
         function setPlayers(n) { 
-            if (n === 2 && config.mode === 'competition') {
-                setModeInternal('fixed'); 
+            if (n === 2 && (config.mode === 'progressive' || config.mode === 'season1')) {
+                setMode('fixed'); 
             }
             config.players = n; 
             document.querySelectorAll('.toggle-btn[data-val]').forEach(b => b.classList.remove('active')); 
@@ -703,7 +683,7 @@
         }
 
         function getScoreMultiplier() {
-            if (config.mode === 'competition') return 1.0; 
+            if (config.mode === 'progressive' || config.mode === 'season1') return 1.0; 
             if (config.bpm === 70) return 0.8;
             if (config.bpm === 120) return 1.2;
             return 1.0;
@@ -745,11 +725,8 @@
             try { 
                 let payload = { name: name, score: session.p1.score, difficulty: config.diff, bpm: config.bpm, type: type, mode: config.mode, timestamp: firebase.firestore.FieldValue.serverTimestamp() }; 
                 if(type === 'student') { payload.grade = grade; payload.class = cls; payload.classId = classId; } 
-                
-                let colName = 'leaderboard';
-                if (config.mode === 'competition') colName = 'lb_competition';
 
-                await db.collection(colName).add(payload); 
+                await db.collection('leaderboard').add(payload); 
                 lbCache = {};
                 document.getElementById('upload-ui').style.display = 'none'; 
                 document.getElementById('upload-success-msg').style.display = 'block'; 
@@ -764,14 +741,7 @@
             if (lbCache[cacheKey] && (now - lbCache[cacheKey].timestamp < CACHE_DURATION)) { renderLBList(list, lbCache[cacheKey].data); return; }
             list.innerHTML = '<li class="lb-item" style="justify-content:center;">讀取中...</li>'; 
             
-            let colName = 'leaderboard';
-            if (mode === 'competition') colName = 'lb_competition';
-
-            let q = db.collection(colName);
-            if (colName === 'leaderboard') {
-                q = q.where('mode', '==', mode);
-            }
-
+            let q = db.collection('leaderboard').where('mode', '==', mode);
             try { 
                 if (currentLB.category === 'class') { const cid = currentLB.filterGrade + currentLB.filterClass; q = q.where('classId', '==', cid).orderBy('score', 'desc'); } 
                 else if (currentLB.category === 'grade') { q = q.where('grade', '==', currentLB.filterGrade).orderBy('score', 'desc'); } 
@@ -793,7 +763,8 @@
                 const safeName = data.name.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
                 let rankColor = 'var(--rank-b)'; if(rank===1) rankColor = 'var(--rank-s)'; if(rank===2) rankColor = 'var(--rank-a)'; if(rank===3) rankColor = '#fff'; 
                 let detailInfo = "訪客"; if(data.type === 'student') { detailInfo = `${data.classId} (${data.grade}年級)`; } 
-                const metaStr = `${getSpeedText(data.bpm || 95)} | ${getDiffText(data.difficulty)}`;
+                let metaStr = `${getSpeedText(data.bpm || 95)} | ${getDiffText(data.difficulty)}`;
+                if(data.mode === 'season1') metaStr = `指定音樂`;
                 const item = document.createElement('li'); item.className = 'lb-item';
                 item.innerHTML = `<span class="lb-rank" style="color:${rankColor}">${rank++}</span><div class="lb-info"><span class="lb-name">${safeName}</span><span class="lb-detail">${detailInfo}</span></div><div class="lb-stats"><span class="lb-meta">${metaStr}</span><span class="lb-score">${data.score}</span></div>`; 
                 listElement.appendChild(item); 
@@ -803,14 +774,41 @@
         function openCompetitionRanking() {
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
             document.getElementById('competition-screen').classList.add('active');
-            switchCompSeason(1);
+            fetchSeasonLeaderboard();
         }
 
-        function switchCompSeason(season) {
-            document.getElementById('comp-tab-1').classList.add('active');
+        async function fetchSeasonLeaderboard() {
             const container = document.getElementById('comp-grid-container');
-            if (season === 1) {
-                renderCompGrid(container, SEASON_1_RESULTS);
+            container.innerHTML = '<div style="text-align:center; padding:20px; grid-column:1/-1; color:#aaa;">實時讀取比賽數據中...</div>';
+            if (!db) { container.innerHTML = '<div style="text-align:center; color:#f87171;">資料庫未連接</div>'; return; }
+            try {
+                // 獲取賽季1的所有學生成績 (即時運算)
+                const querySnapshot = await db.collection('leaderboard').where('mode', '==', 'season1').get();
+                let gradesData = {1:[], 2:[], 3:[], 4:[], 5:[], 6:[]};
+                const uniqueData = new Map();
+                
+                querySnapshot.forEach(doc => { 
+                    const d = doc.data(); 
+                    if (d.type !== 'student') return; // 只計算學生
+                    const key = d.classId + '_' + d.name; 
+                    if (!uniqueData.has(key) || d.score > uniqueData.get(key).score) { 
+                        uniqueData.set(key, d); 
+                    } 
+                });
+                
+                let allStudents = Array.from(uniqueData.values());
+                allStudents.forEach(d => {
+                    let grade = parseInt(d.grade);
+                    if (gradesData[grade]) { gradesData[grade].push(d); }
+                });
+                
+                for(let g=1; g<=6; g++) {
+                    gradesData[g].sort((a,b) => b.score - a.score);
+                }
+                renderCompGrid(container, gradesData);
+            } catch(e) {
+                console.error("Season LB fetch Error:", e);
+                container.innerHTML = '<div style="text-align:center; color:#f87171;">讀取失敗，請重試。</div>';
             }
         }
 
@@ -822,9 +820,10 @@
                 if (gradeList.length === 0) { cardHtml += `<div style="text-align:center; color:#666; padding:10px; font-size:12px;">暫無紀錄</div>`; } 
                 else {
                     let rank = 1;
-                    gradeList.forEach(data => {
+                    // 每級顯示最多5人，但頭三名有特別標記
+                    gradeList.slice(0, 5).forEach(data => {
                         let badge = rank; let color = '#fff';
-                        if(rank===1) { badge='🥇'; color='var(--comp-gold)'; } else if(rank===2) { badge='🥈'; color='var(--comp-silver)'; } else if(rank===3) { badge='🥉'; color='var(--comp-bronze)'; } else { badge = rank + '.'; color='#94a3b8'; }
+                        if(rank===1) { badge='🥇'; color='var(--comp-gold)'; } else if(rank===2) { badge='🥈'; color='#94a3b8'; } else if(rank===3) { badge='🥉'; color='#fb923c'; } else { badge = rank + '.'; color='#64748b'; }
                         cardHtml += `<div class="comp-item"><span class="comp-rank" style="color:${color}">${badge}</span><span class="comp-name" style="color:${color}">${data.classId} ${data.name}</span><div style="text-align:right;"><div class="comp-score">${data.score}</div></div></div>`;
                         rank++;
                     });
@@ -874,16 +873,17 @@
         function startGame() {
             if(document.activeElement) document.activeElement.blur(); AudioEngine.init(); VFX.init();
             
-            config.bpm = parseInt(document.getElementById('speed-select').value);
-
-            if (config.mode === 'competition') {
+            if (config.mode === 'season1') {
+                config.bpm = SEASON1_BPM; config.rounds = Infinity; config.players = 1; config.diff = 'easy'; 
+            } else if (config.mode === 'progressive') {
                 config.bpm = 95; config.rounds = Infinity; config.players = 1; config.diff = 'easy'; 
             } else {
+                config.bpm = parseInt(document.getElementById('speed-select').value);
                 config.diff = document.getElementById('diff-select').value;
                 config.rounds = config.mode.includes('survival') ? Infinity : parseInt(document.getElementById('round-select').value);
             }
 
-            let initLives = config.mode === 'competition' ? 5 : 3;
+            let initLives = (config.mode === 'progressive' || config.mode === 'season1') ? 5 : 3;
 
             const initP = () => ({ score: 0, lives: initLives, notes: [], stats: {p:0,g:0,m:0}, bump: 1, combo: 0, maxCombo: 0 });
             session = { round: 0, nextTime: AudioEngine.ctx.currentTime + 2.0, p1: initP(), p2: initP() };
@@ -891,15 +891,77 @@
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('hud-p2').style.opacity = config.players === 2 ? 1 : 0;
             updateHUD(); gameState = 'PLAYING'; timeouts.forEach(clearTimeout); timeouts = []; if(animId) cancelAnimationFrame(animId);
             
-            schedule(); render();
+            if (config.mode === 'season1') {
+                startSeason1Mode();
+            } else {
+                schedule(); 
+            }
+            render();
+        }
+
+        // 賽季1的專屬生成與排程函數
+        function startSeason1Mode() {
+            const bgm = document.getElementById('bgm-season1');
+            if (bgm) bgm.currentTime = 0;
+            
+            const now = AudioEngine.ctx.currentTime;
+            const musicStartTime = now + SEASON1_MUSIC_START_DELAY; // 音樂正式開始播放的絕對時間
+            
+            // 計算一個十六分音符的長度 (秒)
+            const sixteenthDuration = (60 / SEASON1_BPM) / 4; 
+            
+            // 移除譜面中的所有空格，方便排版
+            const cleanMap = SEASON1_MAP.replace(/\s+/g, '');
+            
+            let noteCount = 0;
+            let lyricIndex = 0;
+            let lastNoteTarget = 0;
+            
+            for (let i = 0; i < cleanMap.length; i++) {
+                if (cleanMap[i] === '1') {
+                    // targetTime = 音樂播放時間 + 譜面整體偏移 + (音符所在索引 * 十六分音符時長)
+                    let targetTime = musicStartTime + SEASON1_CHART_OFFSET + (i * sixteenthDuration);
+                    
+                    let char = "";
+                    // 從第 41 個音符 (index: 40) 開始塞入中文字
+                    if (noteCount >= 40 && lyricIndex < SEASON1_LYRICS.length) {
+                        char = SEASON1_LYRICS[lyricIndex];
+                        lyricIndex++;
+                    }
+                    
+                    session.p1.notes.push({ 
+                        target: targetTime, 
+                        hit: false, 
+                        missed: false, 
+                        index: noteCount,
+                        lyric: char 
+                    });
+                    
+                    lastNoteTarget = targetTime;
+                    noteCount++;
+                }
+            }
+            
+            // 在延遲時間後開始播放音樂
+            timeouts.push(setTimeout(() => {
+                if (gameState === 'PLAYING' && bgm) bgm.play().catch(e => console.log("BGM Error", e));
+            }, SEASON1_MUSIC_START_DELAY * 1000));
+            
+            notify("準備開始", "var(--comp-gold)");
+            
+            // 設定遊戲在最後一顆音符結束後的2.5秒自動進入結算畫面
+            let durationToLastNote = lastNoteTarget > 0 ? (lastNoteTarget - now) : 5;
+            timeouts.push(setTimeout(() => {
+                if (gameState === 'PLAYING') endGame();
+            }, (durationToLastNote + 2.5) * 1000));
         }
 
         function schedule() {
             if(gameState !== 'PLAYING') return;
 
-            if(!config.mode.includes('survival') && config.mode !== 'competition' && session.round >= config.rounds) { endGame(); return; }
+            if(!config.mode.includes('survival') && config.mode !== 'progressive' && session.round >= config.rounds) { endGame(); return; }
             
-            if(config.mode === 'competition') {
+            if(config.mode === 'progressive') {
                 if(session.round < 4) config.diff = 'easy';
                 else if(session.round < 8) config.diff = 'normal';
                 else if(session.round < 12) config.diff = 'hard';
@@ -922,7 +984,7 @@
                 if(gameState!=='PLAYING') return; 
                 let col = config.mode.includes('vanishing') ? '#d946ef' : '#facc15'; 
                 if(config.mode === 'vanishing-survival') col = '#f87171'; 
-                if(config.mode === 'competition') col = 'var(--comp-gold)';
+                if(config.mode === 'progressive') col = 'var(--prog-color)';
                 notify("PLAY", col); AudioEngine.play('metro', AudioEngine.ctx.currentTime); 
             }, (playStart - AudioEngine.ctx.currentTime)*1000));
             
@@ -932,9 +994,16 @@
             if(gameState !== 'PLAYING') return; 
 
             ctx.clearRect(0, 0, width, height); VFX.update(ctx);
-            const now = AudioEngine.ctx.currentTime; const speed = getSpeed(); const beatSec = getBeatSec();
+            const now = AudioEngine.ctx.currentTime; 
+            const beatSec = getBeatSec();
             
-            const isVanishingP1 = config.mode.includes('vanishing') || config.mode === 'competition';
+            // 決定音符飛行速度與消失效果
+            let speed = getSpeed();
+            if (config.mode === 'season1') {
+                speed = (SPAWN_X - HIT_X) / SEASON1_NOTE_FLIGHT_TIME;
+            }
+
+            const isVanishingP1 = config.mode.includes('vanishing') || config.mode === 'progressive';
             
             const y1 = config.players === 1 ? height/2 : height*0.28; const y2 = height*0.72;
             
@@ -944,7 +1013,7 @@
             drawTrack(ctx, y1, 'var(--p1-color)', 'P1', session.p1.bump);
             drawNotes(ctx, session.p1.notes, y1, '#22d3ee', now, speed, beatSec, isVanishingP1, 1);
             if(config.players === 2) {
-                const isVanishingP2 = config.mode.includes('vanishing') || config.mode === 'competition';
+                const isVanishingP2 = config.mode.includes('vanishing') || config.mode === 'progressive';
                 ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; ctx.lineWidth = 4; ctx.setLineDash([15, 15]); ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2); ctx.stroke(); ctx.shadowBlur = 15; ctx.shadowColor = "rgba(255, 255, 255, 0.5)"; ctx.stroke(); ctx.restore();
                 drawTrack(ctx, y2, 'var(--p2-color)', 'P2', session.p2.bump);
                 drawNotes(ctx, session.p2.notes, y2, '#f472b6', now, speed, beatSec, isVanishingP2, 2);
@@ -972,8 +1041,12 @@
                     if (alpha > 1) alpha = 1; if (alpha < 0) alpha = 0;
                 }
                 if (x > -50 && x < width && !n.missed && alpha > 0.01) {
-                    const isIncoming = dt <= (BEATS_PHASE * beatSec);
+                    // 根據模式判斷是否快到達
+                    let isIncoming = dt <= (BEATS_PHASE * beatSec);
+                    if (config.mode === 'season1') isIncoming = (dt <= SEASON1_NOTE_FLIGHT_TIME);
+
                     let noteColor = (vanish && isIncoming) ? '#d946ef' : (isIncoming ? color : '#64748b');
+                    if (config.mode === 'season1') noteColor = color; // Season1 固定顏色，不變暗
 
                     c.save(); c.globalAlpha = alpha;
                     c.shadowBlur = 25; c.shadowColor = noteColor;
@@ -981,7 +1054,19 @@
                     grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.7, noteColor); grad.addColorStop(1, noteColor);
                     c.fillStyle = grad; c.beginPath(); c.arc(x, y, 35, 0, Math.PI*2); c.fill();
                     c.strokeStyle = "white"; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
-                    c.fillStyle = "rgba(255,255,255,0.5)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
+                    c.fillStyle = "rgba(255,255,255,0.3)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
+                    
+                    // 新增：繪製歌詞文字在音符中間
+                    if (n.lyric) {
+                        c.fillStyle = "white";
+                        c.font = "900 26px 'Segoe UI', sans-serif";
+                        c.textAlign = "center";
+                        c.textBaseline = "middle";
+                        c.shadowBlur = 4;
+                        c.shadowColor = "rgba(0,0,0,0.8)";
+                        c.fillText(n.lyric, x, y + 2); // 微調 y 軸使其視覺置中
+                    }
+                    
                     c.restore();
                 }
                 if(dt < -WINDOWS.MISS && !n.missed) { n.missed = true; handleResult(pid, 'MISS'); showFeedback('MISS', HIT_X, y, 'var(--rank-d)'); }
@@ -1006,7 +1091,7 @@
             }
         }
         function handleResult(pid, rating) {
-            const data = pid === 1 ? session.p1 : session.p2; const isSurvival = config.mode.includes('survival') || config.mode === 'competition';
+            const data = pid === 1 ? session.p1 : session.p2; const isSurvival = config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1';
             let multiplier = getScoreMultiplier();
             if(rating === 'PERFECT' || rating === 'GOOD') { 
                 data.combo++; if(data.combo > data.maxCombo) data.maxCombo = data.combo;
@@ -1030,10 +1115,11 @@
         }
         function updateHUD() {
             document.getElementById('p1-score').innerText = session.p1.score; document.getElementById('p2-score').innerText = session.p2.score;
-            const isSurvivalMode = config.mode.includes('survival') || config.mode === 'competition';
+            const isSurvivalMode = config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1';
             if(isSurvivalMode) { renderHearts('p1-lives', session.p1.lives); renderHearts('p2-lives', session.p2.lives); } else { document.getElementById('p1-lives').innerHTML = ""; document.getElementById('p2-lives').innerHTML = ""; }
-            let rTxt = `ROUND ${session.round}`; 
-            if(!config.mode.includes('survival') && config.mode !== 'competition') rTxt += ` / ${config.rounds}`; 
+            let rTxt = `ROUND ${session.round}`;
+            if(config.mode === 'season1') rTxt = 'MUSIC MODE';
+            else if(!config.mode.includes('survival') && config.mode !== 'progressive') rTxt += ` / ${config.rounds}`; 
             document.getElementById('round-info').innerText = rTxt;
         }
         function renderHearts(elementId, count) { const container = document.getElementById(elementId); let html = ''; for(let i=0; i<Math.max(0, count); i++) { html += '<span class="heart">❤</span>'; } container.innerHTML = html; }
@@ -1041,9 +1127,15 @@
         function notify(text, color) { const el = document.getElementById('center-notify'); el.innerText = text; el.style.color = color; el.style.opacity = 1; if (config.players === 1) { el.style.top = "75%"; } else { el.style.top = "50%"; } el.style.transform = "translate(-50%, -50%) scale(1.2)"; setTimeout(() => { el.style.opacity = 0; el.style.transform = "translate(-50%, -50%) scale(1)"; }, 600); }
         function endGame() {
             gameState = 'END'; document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('result-screen').classList.add('active'); timeouts.forEach(clearTimeout);
-            const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'competition':'賽季1'}[config.mode];
-            document.getElementById('res-mode').innerText = mName; document.getElementById('res-len').innerText = (config.mode.includes('survival') || config.mode === 'competition') ? "∞" : config.rounds + "R";
-            const dNames = {easy:'簡單', normal:'普通', hard:'困難', master:'達人'}; document.getElementById('res-diff').innerText = (config.mode === 'competition') ? '自動晉級' : dNames[config.diff];
+            
+            const bgmSeason = document.getElementById('bgm-season1');
+            if(bgmSeason) { bgmSeason.pause(); }
+
+            const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}[config.mode];
+            document.getElementById('res-mode').innerText = mName; document.getElementById('res-len').innerText = (config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1') ? "∞" : config.rounds + "R";
+            const dNames = {easy:'簡單', normal:'普通', hard:'困難', master:'達人'}; 
+            document.getElementById('res-diff').innerText = (config.mode === 'progressive' || config.mode === 'season1') ? '自動/指定' : dNames[config.diff];
+            
             const scrollContainer = document.getElementById('result-scroll-container'); const container = document.getElementById('result-content'); container.innerHTML = ''; 
             if(config.players === 1) { scrollContainer.classList.add('single-mode-layout'); container.className = 'result-flex single-layout'; } else { scrollContainer.classList.remove('single-mode-layout'); container.className = 'result-flex'; }
             container.appendChild(createResultCard(1, session.p1)); if(config.players === 2) container.appendChild(createResultCard(2, session.p2));
@@ -1069,8 +1161,8 @@
             if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(code)) { e.preventDefault(); if(!e.repeat) handleInput(2); }
         });
         const t1 = document.getElementById('touch-p1'); const t2 = document.getElementById('touch-p2');
-        t1.addEventListener('touchstart', (e)=>handleTouch(1,e)); t1.addEventListener('mousedown', (e)=>handleTouch(1,e));
-        t2.addEventListener('touchstart', (e)=>handleTouch(2,e)); t2.addEventListener('mousedown', (e)=>handleTouch(2,e));
+        if(t1){ t1.addEventListener('touchstart', (e)=>handleTouch(1,e)); t1.addEventListener('mousedown', (e)=>handleTouch(1,e)); }
+        if(t2){ t2.addEventListener('touchstart', (e)=>handleTouch(2,e)); t2.addEventListener('mousedown', (e)=>handleTouch(2,e)); }
         updateDescription();
     </script>
 </body>
