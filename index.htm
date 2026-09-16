@@ -8,6 +8,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- 引入 Google Identity Services 以支援 OAuth 登入 -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
             /* Theme Colors */
@@ -102,6 +104,63 @@
             font-size: 90px; font-weight: 900; text-transform: uppercase; opacity: 0; white-space: nowrap;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); transition: all 0.2s ease-out; z-index: 50;
         }
+        
+        /* 賽季1 專屬標語特效 */
+        .s1-slogan {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 15;
+            
+            /* 彩虹漸變色 */
+            background: linear-gradient(90deg, #ff3366, #ff9933, #ffff33, #33ff33, #33ffff, #3366ff, #cc33ff, #ff3366);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            
+            /* 發光陰影特效 */
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+            
+            /* 搖動與漸變動畫 */
+            animation: swayAndColor 3s ease-in-out infinite;
+        }
+        
+        .s1-slogan.visible {
+            opacity: 1;
+        }
+        
+        #season1-slogan-top {
+            top: calc(50% - 130px);
+        }
+        
+        #season1-slogan-bottom {
+            top: calc(50% + 90px);
+        }
+
+        @keyframes swayAndColor {
+            0% { 
+                transform: translateX(-50%) rotate(-2deg) scale(0.95); 
+                background-position: 0% center; 
+            }
+            50% { 
+                transform: translateX(-50%) rotate(2deg) scale(1.05); 
+                background-position: 100% center; 
+                filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1));
+            }
+            100% { 
+                transform: translateX(-50%) rotate(-2deg) scale(0.95); 
+                background-position: 0% center; 
+            }
+        }
+
         .combo-popup {
             position: absolute; font-weight: 900; font-size: 48px; color: #facc15; text-shadow: 0 0 10px #b45309, 0 0 20px #facc15;
             transform: translate(-50%, -50%); pointer-events: none; opacity: 0; z-index: 40;
@@ -140,7 +199,7 @@
             display: flex; flex-direction: column; gap: 5px; align-items: center;
             margin-bottom: 5px;
         }
-        .season-text { color: #facc15; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
+        .season-text { color: #facc15; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
 
         .main-content-area {
             flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -290,6 +349,9 @@
             .lb-category-container { margin-bottom: 5px; }
             .cat-btn { padding: 5px 10px; font-size: 11px; }
             .comp-grid { max-height: 250px; }
+            .s1-slogan { font-size: 28px; }
+            #season1-slogan-top { top: calc(50% - 110px); }
+            #season1-slogan-bottom { top: calc(50% + 70px); }
         }
     </style>
 </head>
@@ -311,6 +373,10 @@
         <div id="touch-p1" class="touch-layer"></div>
         <div id="touch-p2" class="touch-layer"></div>
         <div id="ui-layer">
+            <!-- 賽季1 專屬字句 -->
+            <div id="season1-slogan-top" class="s1-slogan">藍循三十傳承愛</div>
+            <div id="season1-slogan-bottom" class="s1-slogan">信守真理育英才</div>
+            
             <div class="hud-bar p1-hud" id="hud-p1">
                 <div>P1 SCORE <span id="p1-score" style="margin-left:10px; color:white;">0</span></div>
                 <div id="p1-lives" class="lives"></div> 
@@ -328,7 +394,7 @@
                 <h1>藍循節奏大師</h1>
                 <p class="subtitle">先聆聽四拍節奏，然後擊打出相同的節奏。</p>
                 <div class="season-banner" style="display: flex; flex-direction: column; gap: 5px; border-radius: 15px; padding: 10px 25px; height: auto;">
-                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);"> *藍循三十周年校慶特別版* 賽季1：2026年10月21日至11月1日</span>
+                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);">賽季1：2026年10月21日至11月1日</span>
                 </div>
             </div>
             
@@ -515,6 +581,33 @@
         let db;
         let isLBLocked = false;
         let lockDocRef = null;
+        let isGoogleLoggedIn = false;
+        let googleUserInfo = null;
+        let tokenClient;
+
+        window.onload = function () {
+            if (window.google) {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: '573911894747-0c28hfr0bmkjnn8pkm2msg6sjal1thqe.apps.googleusercontent.com',
+                    scope: 'email profile',
+                    callback: (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                            }).then(res => res.json()).then(data => {
+                                isGoogleLoggedIn = true;
+                                googleUserInfo = data;
+                                alert("Google 登入成功！歡迎，" + data.name);
+                                setModeInternal('season1');
+                            }).catch(err => {
+                                console.error("Error fetching user info:", err);
+                                alert("獲取用戶資訊失敗，請重試。");
+                            });
+                        }
+                    }
+                });
+            }
+        };
 
         try { 
             if (firebaseConfig.apiKey !== "您的_API_KEY") { 
@@ -590,7 +683,7 @@
                 'survival': "生存模式：無盡挑戰直至出現3次失誤，挑戰你的集中力。",
                 'vanishing-survival': "消存模式：消失與生存的混合模式，大師級的終極試練！",
                 'progressive': "漸進模式：無盡挑戰直至出現5次失誤，難度將逐漸提升。",
-                'season1': "賽季1：一邊欣賞三十周年主題曲一邊擊打節奏！"
+                'season1': "賽季1：一邊欣賞三十周年主題曲一邊擊打節奏！(需先登入 Google 帳戶)"
             }
         };
 
@@ -605,10 +698,13 @@
             timeouts.forEach(clearTimeout);
             if (animId) cancelAnimationFrame(animId);
             
-            // 停止背景音樂
+            // 停止背景音樂及隱藏賽季1專屬字句
             const bgmSeason = document.getElementById('bgm-season1');
             if(bgmSeason) { bgmSeason.pause(); bgmSeason.currentTime = 0; }
             if(AudioEngine.ctx && AudioEngine.ctx.state === 'running') { AudioEngine.ctx.suspend().then(()=>AudioEngine.ctx.resume()); }
+            
+            document.getElementById('season1-slogan-top').classList.remove('visible');
+            document.getElementById('season1-slogan-bottom').classList.remove('visible');
             
             showMenu();
         }
@@ -648,7 +744,19 @@
             refreshLB(); 
         }
         
-        function setMode(m) { 
+        function setMode(m) {
+            if (m === 'season1' && !isGoogleLoggedIn) {
+                if (tokenClient) {
+                    tokenClient.requestAccessToken();
+                } else {
+                    alert("Google 登入服務未載入，請刷新頁面重試。");
+                }
+                return;
+            }
+            setModeInternal(m);
+        }
+
+        function setModeInternal(m) { 
             config.mode = m; 
             document.querySelectorAll('.toggle-btn[data-mode]').forEach(b => b.classList.remove('active')); 
             document.querySelector(`.toggle-btn[data-mode="${m}"]`).classList.add('active'); 
@@ -674,7 +782,7 @@
         
         function setPlayers(n) { 
             if (n === 2 && (config.mode === 'progressive' || config.mode === 'season1')) {
-                setMode('fixed'); 
+                setModeInternal('fixed'); 
             }
             config.players = n; 
             document.querySelectorAll('.toggle-btn[data-val]').forEach(b => b.classList.remove('active')); 
@@ -725,6 +833,9 @@
             try { 
                 let payload = { name: name, score: session.p1.score, difficulty: config.diff, bpm: config.bpm, type: type, mode: config.mode, timestamp: firebase.firestore.FieldValue.serverTimestamp() }; 
                 if(type === 'student') { payload.grade = grade; payload.class = cls; payload.classId = classId; } 
+                if(config.mode === 'season1' && googleUserInfo) {
+                    payload.lastName = googleUserInfo.family_name || googleUserInfo.name;
+                }
 
                 await db.collection('leaderboard').add(payload); 
                 lbCache = {};
@@ -762,7 +873,10 @@
             dataList.forEach((data) => { 
                 const safeName = data.name.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
                 let rankColor = 'var(--rank-b)'; if(rank===1) rankColor = 'var(--rank-s)'; if(rank===2) rankColor = 'var(--rank-a)'; if(rank===3) rankColor = '#fff'; 
-                let detailInfo = "訪客"; if(data.type === 'student') { detailInfo = `${data.classId} (${data.grade}年級)`; } 
+                let detailInfo = "訪客"; 
+                if(data.type === 'student') { 
+                    detailInfo = `${data.classId} (${data.grade}年級)`; 
+                } 
                 let metaStr = `${getSpeedText(data.bpm || 95)} | ${getDiffText(data.difficulty)}`;
                 if(data.mode === 'season1') metaStr = `指定音樂`;
                 const item = document.createElement('li'); item.className = 'lb-item';
@@ -824,7 +938,13 @@
                     gradeList.slice(0, 5).forEach(data => {
                         let badge = rank; let color = '#fff';
                         if(rank===1) { badge='🥇'; color='var(--comp-gold)'; } else if(rank===2) { badge='🥈'; color='#94a3b8'; } else if(rank===3) { badge='🥉'; color='#fb923c'; } else { badge = rank + '.'; color='#64748b'; }
-                        cardHtml += `<div class="comp-item"><span class="comp-rank" style="color:${color}">${badge}</span><span class="comp-name" style="color:${color}">${data.classId} ${data.name}</span><div style="text-align:right;"><div class="comp-score">${data.score}</div></div></div>`;
+                        
+                        let dispName = `${data.classId} ${data.name}`;
+                        if (data.lastName) {
+                            dispName += ` (${data.lastName})`;
+                        }
+
+                        cardHtml += `<div class="comp-item"><span class="comp-rank" style="color:${color}">${badge}</span><span class="comp-name" style="color:${color}">${dispName}</span><div style="text-align:right;"><div class="comp-score">${data.score}</div></div></div>`;
                         rank++;
                     });
                 }
@@ -885,6 +1005,11 @@
             
             if (config.mode === 'season1') {
                 config.bpm = SEASON1_BPM; config.rounds = Infinity; config.players = 1; config.diff = 'easy'; 
+                
+                // 顯示賽季1專屬字句
+                document.getElementById('season1-slogan-top').classList.add('visible');
+                document.getElementById('season1-slogan-bottom').classList.add('visible');
+                
             } else if (config.mode === 'progressive') {
                 config.bpm = 95; config.rounds = Infinity; config.players = 1; config.diff = 'easy'; 
             } else {
@@ -1066,13 +1191,13 @@
                     c.strokeStyle = "white"; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
                     c.fillStyle = "rgba(255,255,255,0.3)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
                     
-                    // 繪製歌詞文字在音符中間，加入色彩繽紛的特效
+                    // 繪製歌詞文字在音符中間
                     if (n.lyric) {
                         c.font = "900 34px 'Segoe UI', sans-serif";
                         c.textAlign = "center";
                         c.textBaseline = "middle";
                         
-                        // 使用基於 index 的動態色彩 (彩虹漸變效果)
+                        // 使用基於 index 的動態色彩
                         let hue = (n.index * 15) % 360;
                         
                         // 彩色外框
@@ -1086,7 +1211,6 @@
                         c.shadowColor = `hsl(${hue}, 100%, 60%)`;
                         c.fillText(n.lyric, x, y + 2);
                         
-                        // 重置陰影以免影響後續繪製
                         c.shadowBlur = 0; 
                     }
                     
@@ -1157,6 +1281,9 @@
             
             const bgmSeason = document.getElementById('bgm-season1');
             if(bgmSeason) { bgmSeason.pause(); }
+            
+            document.getElementById('season1-slogan-top').classList.remove('visible');
+            document.getElementById('season1-slogan-bottom').classList.remove('visible');
 
             const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}[config.mode];
             document.getElementById('res-mode').innerText = mName; document.getElementById('res-len').innerText = (config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1') ? "∞" : config.rounds + "R";
