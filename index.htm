@@ -105,32 +105,20 @@
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); transition: all 0.2s ease-out; z-index: 50;
         }
         
-        /* 賽季1 專屬標語特效 */
+        /* 賽季1 專屬標語特效：圓潤可愛字體、柔和色彩、錯開跳動 */
         .s1-slogan {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 38px;
+            display: flex;
+            gap: 15px; /* 文字間距稍稍分開 */
+            font-size: 48px; /* 字體放大 */
             font-weight: 900;
-            letter-spacing: 8px;
-            white-space: nowrap;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
             z-index: 15;
-            
-            /* 彩虹漸變色 */
-            background: linear-gradient(90deg, #ff3366, #ff9933, #ffff33, #33ff33, #33ffff, #3366ff, #cc33ff, #ff3366);
-            background-size: 200% auto;
-            color: transparent;
-            -webkit-background-clip: text;
-            background-clip: text;
-            
-            /* 發光陰影特效 */
-            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
-            
-            /* 搖動與漸變動畫 */
-            animation: swayAndColor 3s ease-in-out infinite;
+            font-family: 'Comic Sans MS', 'Varela Round', 'Arial Rounded MT Bold', 'Segoe UI', sans-serif;
         }
         
         .s1-slogan.visible {
@@ -145,20 +133,21 @@
             top: calc(50% + 90px);
         }
 
-        @keyframes swayAndColor {
-            0% { 
-                transform: translateX(-50%) rotate(-2deg) scale(0.95); 
-                background-position: 0% center; 
-            }
-            50% { 
-                transform: translateX(-50%) rotate(2deg) scale(1.05); 
-                background-position: 100% center; 
-                filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1));
-            }
-            100% { 
-                transform: translateX(-50%) rotate(-2deg) scale(0.95); 
-                background-position: 0% center; 
-            }
+        .s1-slogan span {
+            display: inline-block;
+            /* 圓潤可愛的厚實立體陰影與柔和發光 */
+            text-shadow: 
+                0px 3px 0px rgba(0,0,0,0.15), 
+                0 0 15px currentColor, 
+                0 0 25px rgba(255,255,255,0.7);
+            /* 個別錯開的動畫設定 */
+            animation: cuteFloat 2s ease-in-out infinite;
+            animation-delay: calc(var(--i) * 0.15s);
+        }
+
+        @keyframes cuteFloat {
+            0%, 100% { transform: translateY(0) rotate(-4deg) scale(1); }
+            50% { transform: translateY(-12px) rotate(4deg) scale(1.15); filter: brightness(1.2); }
         }
 
         .combo-popup {
@@ -349,7 +338,7 @@
             .lb-category-container { margin-bottom: 5px; }
             .cat-btn { padding: 5px 10px; font-size: 11px; }
             .comp-grid { max-height: 250px; }
-            .s1-slogan { font-size: 28px; }
+            .s1-slogan { font-size: 36px; gap: 10px; }
             #season1-slogan-top { top: calc(50% - 110px); }
             #season1-slogan-bottom { top: calc(50% + 70px); }
         }
@@ -373,9 +362,26 @@
         <div id="touch-p1" class="touch-layer"></div>
         <div id="touch-p2" class="touch-layer"></div>
         <div id="ui-layer">
-            <!-- 賽季1 專屬字句 -->
-            <div id="season1-slogan-top" class="s1-slogan">藍循三十傳承愛</div>
-            <div id="season1-slogan-bottom" class="s1-slogan">信守真理育英才</div>
+            
+            <!-- 賽季1 專屬字句：利用 span 拆分每個字以達到錯開的微彈跳柔和特效 -->
+            <div id="season1-slogan-top" class="s1-slogan">
+                <span style="--i:1; color:#ffb3ba;">藍</span>
+                <span style="--i:2; color:#ffd1a9;">循</span>
+                <span style="--i:3; color:#fde047;">三</span>
+                <span style="--i:4; color:#baffc9;">十</span>
+                <span style="--i:5; color:#bae1ff;">傳</span>
+                <span style="--i:6; color:#dcbaff;">承</span>
+                <span style="--i:7; color:#ffb3ff;">愛</span>
+            </div>
+            <div id="season1-slogan-bottom" class="s1-slogan">
+                <span style="--i:1; color:#ffb3ba;">信</span>
+                <span style="--i:2; color:#ffd1a9;">守</span>
+                <span style="--i:3; color:#fde047;">真</span>
+                <span style="--i:4; color:#baffc9;">理</span>
+                <span style="--i:5; color:#bae1ff;">育</span>
+                <span style="--i:6; color:#dcbaff;">英</span>
+                <span style="--i:7; color:#ffb3ff;">才</span>
+            </div>
             
             <div class="hud-bar p1-hud" id="hud-p1">
                 <div>P1 SCORE <span id="p1-score" style="margin-left:10px; color:white;">0</span></div>
@@ -1191,7 +1197,7 @@
                     c.strokeStyle = "white"; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
                     c.fillStyle = "rgba(255,255,255,0.3)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
                     
-                    // 繪製歌詞文字在音符中間
+                    // 繪製歌詞文字在音符中間，加入色彩繽紛的特效
                     if (n.lyric) {
                         c.font = "900 34px 'Segoe UI', sans-serif";
                         c.textAlign = "center";
