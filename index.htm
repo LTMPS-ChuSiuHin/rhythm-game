@@ -52,17 +52,43 @@
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
         }
         
-        /* 動態懸浮光暈 */
-        .ambient-glow {
-            position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.6; z-index: 1;
-            animation: floatGlow 8s infinite alternate ease-in-out;
+        /* 動態極光流光 (Cyber Aurora / Mesh Gradient) */
+        .aurora-container {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+            overflow: hidden; opacity: 0.5; z-index: 1; mix-blend-mode: screen;
         }
-        .glow-1 { top: -20%; left: -10%; width: 50vw; height: 50vw; background: rgba(34, 211, 238, 0.25); animation-delay: 0s; }
-        .glow-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(244, 114, 182, 0.2); animation-delay: -4s; }
-        
-        @keyframes floatGlow {
-            0% { transform: scale(0.8) translate(0, 0); opacity: 0.4; }
-            100% { transform: scale(1.2) translate(5%, 5%); opacity: 0.7; }
+        .aurora-blob {
+            position: absolute; border-radius: 50%; filter: blur(100px);
+            animation: aurora-flow 15s infinite alternate ease-in-out;
+        }
+        .aurora-1 { top: -20%; left: -10%; width: 60vw; height: 60vw; background: #6366f1; animation-delay: 0s; }
+        .aurora-2 { bottom: -20%; right: -10%; width: 70vw; height: 70vw; background: #ec4899; animation-delay: -5s; }
+        .aurora-3 { top: 30%; left: 30%; width: 50vw; height: 50vw; background: #06b6d4; animation-delay: -10s; }
+
+        @keyframes aurora-flow {
+            0% { transform: translate(0, 0) scale(0.8); }
+            33% { transform: translate(15%, 10%) scale(1.1); }
+            66% { transform: translate(-10%, 20%) scale(0.9); }
+            100% { transform: translate(5%, -15%) scale(1.2); }
+        }
+
+        /* 流星雨 / 光束飛掠 (Shooting Stars) */
+        .shooting-star {
+            position: absolute; width: 150px; height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 50%; z-index: 2; opacity: 0;
+            transform: rotate(-45deg); filter: drop-shadow(0 0 6px white);
+        }
+        .ss-1 { top: 5%; left: 80%; animation: shooting 4s linear infinite 0.5s; }
+        .ss-2 { top: 15%; left: 100%; animation: shooting 5s linear infinite 2s; }
+        .ss-3 { top: 40%; left: 120%; animation: shooting 6s linear infinite 3.5s; }
+        .ss-4 { top: -10%; left: 60%; animation: shooting 4.5s linear infinite 1s; }
+        .ss-5 { top: 25%; left: 90%; animation: shooting 5.5s linear infinite 4s; }
+
+        @keyframes shooting {
+            0% { transform: translate(0, 0) rotate(-45deg); opacity: 1; }
+            15% { opacity: 1; }
+            100% { transform: translate(-2000px, 2000px) rotate(-45deg); opacity: 0; }
         }
 
         .cyber-grid {
@@ -72,11 +98,11 @@
             animation: gridMove 4s linear infinite;
             mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%);
-            z-index: 2;
+            z-index: 3;
         }
         @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(60px); } }
         
-        .particle { position: absolute; background: white; border-radius: 50%; opacity: 0; animation: floatUp 5s linear infinite; z-index: 3; }
+        .particle { position: absolute; background: white; border-radius: 50%; opacity: 0; animation: floatUp 5s linear infinite; z-index: 4; }
         .p-1 { left: 10%; width: 2px; height: 2px; animation-duration: 4s; animation-delay: 0s; }
         .p-2 { left: 30%; width: 3px; height: 3px; animation-duration: 7s; animation-delay: 1s; }
         .p-3 { left: 70%; width: 2px; height: 2px; animation-duration: 5s; animation-delay: 2s; }
@@ -104,6 +130,30 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; z-index: 20;
         }
+
+        /* 律動音頻跳動柱 (Equalizer Visualizer) */
+        #equalizer {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
+            display: flex; align-items: flex-end; justify-content: center; gap: 6px;
+            z-index: 12; opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none;
+        }
+        #equalizer.active { opacity: 1; }
+        .eq-bar {
+            width: 14px;
+            background: linear-gradient(to top, var(--p1-color), var(--p2-color), #facc15);
+            border-radius: 6px 6px 0 0; opacity: 0.8;
+            box-shadow: 0 0 15px rgba(244, 114, 182, 0.6);
+            transform-origin: bottom;
+            animation: eq-bounce 0.5s ease-in-out infinite alternate;
+            animation-play-state: paused;
+        }
+        #equalizer.active .eq-bar { animation-play-state: running; }
+        
+        @keyframes eq-bounce {
+            0% { transform: scaleY(0.15); filter: hue-rotate(0deg); }
+            100% { transform: scaleY(1); filter: hue-rotate(45deg); }
+        }
+
         .hud-bar {
             display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 800; letter-spacing: 1px;
             padding: 8px 20px; border-radius: 12px; background: rgba(0, 0, 0, 0.4);
@@ -212,7 +262,7 @@
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.90); backdrop-filter: blur(20px);
+            background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px);
             z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
             display: flex; flex-direction: column; align-items: center; 
             box-sizing: border-box; padding: 20px 30px;
@@ -413,8 +463,19 @@
     <audio id="bgmPlayer" style="display:none;"></audio>
 
     <div class="bg-layer">
-        <div class="ambient-glow glow-1"></div>
-        <div class="ambient-glow glow-2"></div>
+        <!-- 動態極光流光特效 -->
+        <div class="aurora-container">
+            <div class="aurora-blob aurora-1"></div>
+            <div class="aurora-blob aurora-2"></div>
+            <div class="aurora-blob aurora-3"></div>
+        </div>
+        <!-- 流星雨特效 -->
+        <div class="shooting-star ss-1"></div>
+        <div class="shooting-star ss-2"></div>
+        <div class="shooting-star ss-3"></div>
+        <div class="shooting-star ss-4"></div>
+        <div class="shooting-star ss-5"></div>
+        
         <div class="cyber-grid"></div>
         <div class="particle p-1"></div>
         <div class="particle p-2"></div>
@@ -447,6 +508,9 @@
                 <span style="--i:6; color:#dcbaff;">英</span>
                 <span style="--i:7; color:#ffb3ff;">才</span>
             </div>
+            
+            <!-- 律動音頻跳動柱容器 -->
+            <div id="equalizer"></div>
             
             <div class="hud-bar p1-hud" id="hud-p1">
                 <div>P1 SCORE <span id="p1-score" style="margin-left:10px; color:white;">0</span></div>
@@ -673,6 +737,22 @@
         let tokenClient;
 
         window.onload = function () {
+            // 初始化跳動柱
+            const eqContainer = document.getElementById('equalizer');
+            if(eqContainer) {
+                for (let i = 0; i < 35; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'eq-bar';
+                    const dur = (Math.random() * 0.4 + 0.2).toFixed(2);
+                    const delay = -(Math.random() * 2).toFixed(2);
+                    const height = Math.floor(Math.random() * 60 + 40); // 40px - 100px base height
+                    bar.style.animationDuration = `${dur}s`;
+                    bar.style.animationDelay = `${delay}s`;
+                    bar.style.height = `${height}px`;
+                    eqContainer.appendChild(bar);
+                }
+            }
+
             if (window.google) {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: '573911894747-0c28hfr0bmkjnn8pkm2msg6sjal1thqe.apps.googleusercontent.com',
@@ -829,6 +909,7 @@
             
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
+            document.getElementById('equalizer').classList.remove('active');
             document.getElementById('btn-pause').style.display = 'none';
             
             showMenu();
@@ -1213,6 +1294,14 @@
                 }
             }
             
+            // 在延遲時間後啟動音樂與頻譜
+            timeouts.push(setTimeout(() => {
+                if (gameState === 'PLAYING') {
+                    if(bgm) bgm.play().catch(e => console.log("BGM Error", e));
+                    document.getElementById('equalizer').classList.add('active'); // 啟動跳動柱
+                }
+            }, SEASON1_MUSIC_START_DELAY * 1000));
+            
             notify("準備開始", "var(--comp-gold)");
             
             // 設定遊戲在最後一顆音符結束後的音樂漸弱 (Fade Out)
@@ -1271,16 +1360,11 @@
             const now = AudioEngine.ctx.currentTime; 
             const beatSec = getBeatSec();
             
-            // 賽季1 音樂播放排程 (不受暫停影響)
-            if (config.mode === 'season1' && !session.bgmStarted && now >= session.bgmStartTime) {
-                session.bgmStarted = true;
-                const bgm = document.getElementById('bgm-season1');
-                if (bgm) bgm.play().catch(e => console.log("BGM Error", e));
-            }
-            
             // 賽季1 結束與淡出處理 (不受暫停影響)
             if (config.mode === 'season1' && session.endTime && now >= session.endTime && !session.ending) {
                 session.ending = true;
+                document.getElementById('equalizer').classList.remove('active'); // 收起跳動柱
+                
                 let fadeSteps = 20;
                 let fadeOutTime = 2.0; 
                 let intervalTime = (fadeOutTime * 1000) / fadeSteps;
@@ -1476,6 +1560,7 @@
             
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
+            document.getElementById('equalizer').classList.remove('active');
             document.getElementById('btn-pause').style.display = 'none';
 
             const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}[config.mode];
