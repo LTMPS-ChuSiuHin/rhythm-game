@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>藍循節奏大師 正式版</title>
+    <title>藍循節奏大師：1.0正式版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     
@@ -45,29 +45,57 @@
             position: relative;
         }
 
-        .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; pointer-events: none; background: #020617; }
+        /* 增強背景特效 */
+        .bg-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            overflow: hidden; z-index: 0; pointer-events: none; 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        
+        /* 動態懸浮光暈 */
+        .ambient-glow {
+            position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.6; z-index: 1;
+            animation: floatGlow 8s infinite alternate ease-in-out;
+        }
+        .glow-1 { top: -20%; left: -10%; width: 50vw; height: 50vw; background: rgba(34, 211, 238, 0.25); animation-delay: 0s; }
+        .glow-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(244, 114, 182, 0.2); animation-delay: -4s; }
+        
+        @keyframes floatGlow {
+            0% { transform: scale(0.8) translate(0, 0); opacity: 0.4; }
+            100% { transform: scale(1.2) translate(5%, 5%); opacity: 0.7; }
+        }
+
         .cyber-grid {
             position: absolute; width: 200%; height: 200%; bottom: -50%; left: -50%;
-            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
             background-size: 60px 60px; background-position: center bottom; transform: perspective(500px) rotateX(60deg);
             animation: gridMove 4s linear infinite;
             mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%);
+            z-index: 2;
         }
         @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(60px); } }
-        .particle { position: absolute; background: white; border-radius: 50%; opacity: 0; animation: floatUp 5s linear infinite; }
+        
+        .particle { position: absolute; background: white; border-radius: 50%; opacity: 0; animation: floatUp 5s linear infinite; z-index: 3; }
         .p-1 { left: 10%; width: 2px; height: 2px; animation-duration: 4s; animation-delay: 0s; }
         .p-2 { left: 30%; width: 3px; height: 3px; animation-duration: 7s; animation-delay: 1s; }
         .p-3 { left: 70%; width: 2px; height: 2px; animation-duration: 5s; animation-delay: 2s; }
         .p-4 { left: 90%; width: 4px; height: 4px; animation-duration: 6s; animation-delay: 0.5s; }
-        @keyframes floatUp { 0% { bottom: -10px; opacity: 0; } 50% { opacity: 0.4; } 100% { bottom: 100%; opacity: 0; } }
+        @keyframes floatUp { 0% { bottom: -10px; opacity: 0; } 50% { opacity: 0.6; box-shadow: 0 0 10px white; } 100% { bottom: 100%; opacity: 0; } }
 
+        /* 呼吸燈特效外框 */
         #game-wrapper {
             position: relative; width: 100%; max-width: 1100px; height: 100%; max-height: 680px;
             background: rgba(15, 23, 42, 0.4); border-radius: 24px;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); border: 1px solid rgba(255,255,255,0.05);
-            overflow: hidden; z-index: 10; backdrop-filter: blur(5px);
+            overflow: hidden; z-index: 10; backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: borderPulse 4s infinite alternate;
         }
+        @keyframes borderPulse {
+            0% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.15), inset 0 0 15px rgba(34, 211, 238, 0.1); border-color: rgba(34, 211, 238, 0.2); }
+            100% { box-shadow: 0 0 60px rgba(244, 114, 182, 0.25), inset 0 0 25px rgba(244, 114, 182, 0.15); border-color: rgba(244, 114, 182, 0.3); }
+        }
+
         canvas { display: block; width: 100%; height: 100%; }
         .touch-layer { position: absolute; left: 0; width: 100%; height: 50%; z-index: 10; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         #touch-p1 { top: 0; } #touch-p2 { top: 50%; }
@@ -132,8 +160,8 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px;
-            font-size: 48px;
+            gap: 15px; 
+            font-size: 48px; 
             font-weight: 900;
             pointer-events: none;
             opacity: 0;
@@ -184,7 +212,7 @@
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.96); backdrop-filter: blur(40px);
+            background: rgba(2, 6, 23, 0.90); backdrop-filter: blur(20px);
             z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
             display: flex; flex-direction: column; align-items: center; 
             box-sizing: border-box; padding: 20px 30px;
@@ -203,11 +231,12 @@
         
         .season-banner {
             background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: 20px; padding: 10px 25px; 
+            border-radius: 20px; padding: 12px 30px; 
             display: flex; flex-direction: column; gap: 5px; align-items: center;
             margin-bottom: 5px;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
         }
-        .season-text { color: #facc15; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+        .season-text { color: #facc15; font-size: 16px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 0 15px rgba(250, 204, 21, 0.5); }
 
         .main-content-area {
             flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -336,7 +365,10 @@
         .lb-title { color:white; font-size: 14px; margin-bottom: 10px; text-align:center; font-weight:bold; letter-spacing: 2px; text-transform: uppercase;}
         .lb-stats { display: flex; gap: 8px; align-items: center; }
         .lb-meta { font-size: 11px; color: var(--text-secondary); text-align: right; margin-right: 5px; }
-        .comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; max-height: 450px; overflow-y: auto; padding-right: 5px; }
+        
+        /* 賽季龍虎榜更闊 */
+        .comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 15px; max-height: 450px; overflow-y: auto; padding-right: 5px; }
+        
         .comp-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; }
         .comp-grade-title { text-align: center; font-size: 16px; font-weight: bold; color: var(--comp-gold); margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
         .comp-item { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.03); align-items: center; }
@@ -367,10 +399,11 @@
             .upload-form-row { flex-wrap: wrap; }
             .lb-category-container { margin-bottom: 5px; }
             .cat-btn { padding: 5px 10px; font-size: 11px; }
-            .comp-grid { max-height: 250px; }
+            .comp-grid { max-height: 250px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
             .s1-slogan { font-size: 36px; gap: 10px; }
             #season1-slogan-top { top: calc(50% - 150px); }
             #season1-slogan-bottom { top: calc(50% + 110px); }
+            .season-text { font-size: 14px; }
         }
     </style>
 </head>
@@ -380,6 +413,8 @@
     <audio id="bgmPlayer" style="display:none;"></audio>
 
     <div class="bg-layer">
+        <div class="ambient-glow glow-1"></div>
+        <div class="ambient-glow glow-2"></div>
         <div class="cyber-grid"></div>
         <div class="particle p-1"></div>
         <div class="particle p-2"></div>
@@ -425,15 +460,15 @@
             </div>
             
             <!-- 暫停按鈕 (所有模式通用) -->
-            <button id="btn-pause" onclick="pauseGame()">返回主選單</button>
+            <button id="btn-pause" onclick="pauseGame()">⏸️ 主選單</button>
         </div>
 
         <div id="menu-screen" class="screen active">
             <div class="screen-header">
                 <h1>藍循節奏大師</h1>
                 <p class="subtitle">先聆聽四拍節奏，然後擊打出相同的節奏。</p>
-                <div class="season-banner" style="display: flex; flex-direction: column; gap: 5px; border-radius: 15px; padding: 10px 25px; height: auto;">
-                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 16px rgba(74, 222, 128, 0.3);">[藍循30周年校慶] 賽季1：2026年10月21日至11月1日</span>
+                <div class="season-banner">
+                    <span class="season-text">(藍循三十周年校慶) 賽季1：2026年10月21日至11月1日</span>
                 </div>
             </div>
             
@@ -540,7 +575,7 @@
             <div class="scroll-content">
                 <div class="leaderboard-section active" style="max-width: 800px; width: 100%;">
                     <div class="lb-category-container" style="margin-bottom: 15px;">
-                        <button class="cat-btn active" id="comp-tab-1">第一賽季 (2026年10月21日至11月1日)</button>
+                        <button class="cat-btn active" id="comp-tab-1">(藍循三十周年校慶) 賽季1：2026年10月21日至11月1日</button>
                     </div>
                     <div class="comp-grid" id="comp-grid-container">
                         <div style="text-align:center; padding:20px; grid-column:1/-1; color:#aaa;">讀取比賽數據中...</div>
@@ -1323,7 +1358,7 @@
                     c.strokeStyle = "white"; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
                     c.fillStyle = "rgba(255,255,255,0.3)"; c.beginPath(); c.ellipse(x-12, y-12, 10, 15, Math.PI/4, 0, Math.PI*2); c.fill();
                     
-                    // 繪製歌詞文字在音符中間，加入色彩繽紛的特效
+                    // 繪製歌詞文字在音符中間
                     if (n.lyric) {
                         c.font = "900 34px 'Segoe UI', sans-serif";
                         c.textAlign = "center";
@@ -1343,7 +1378,6 @@
                         c.shadowColor = `hsl(${hue}, 100%, 60%)`;
                         c.fillText(n.lyric, x, y + 2);
                         
-                        // 重置陰影以免影響後續繪製
                         c.shadowBlur = 0; 
                     }
                     
