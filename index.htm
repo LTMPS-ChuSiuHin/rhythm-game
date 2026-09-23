@@ -105,14 +105,35 @@
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); transition: all 0.2s ease-out; z-index: 50;
         }
         
+        /* 暫停按鈕 */
+        #btn-pause {
+            display: none;
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            padding: 8px 20px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 60;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+            font-size: 16px;
+            pointer-events: auto;
+        }
+        #btn-pause:hover { background: rgba(255,255,255,0.15); border-color: white; transform: scale(1.05); }
+
         /* 賽季1 專屬標語特效：圓潤可愛字體、柔和色彩、錯開跳動 */
         .s1-slogan {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px; /* 文字間距稍稍分開 */
-            font-size: 48px; /* 字體放大 */
+            gap: 15px;
+            font-size: 48px;
             font-weight: 900;
             pointer-events: none;
             opacity: 0;
@@ -126,21 +147,19 @@
         }
         
         #season1-slogan-top {
-            top: calc(50% - 180px); /* 距離中央音軌更遠 */
+            top: calc(50% - 180px);
         }
         
         #season1-slogan-bottom {
-            top: calc(50% + 140px); /* 距離中央音軌更遠 */
+            top: calc(50% + 140px);
         }
 
         .s1-slogan span {
             display: inline-block;
-            /* 圓潤可愛的厚實立體陰影與柔和發光 */
             text-shadow: 
                 0px 3px 0px rgba(0,0,0,0.15), 
                 0 0 15px currentColor, 
                 0 0 25px rgba(255,255,255,0.7);
-            /* 個別錯開的動畫設定 */
             animation: cuteFloat 2s ease-in-out infinite;
             animation-delay: calc(var(--i) * 0.15s);
         }
@@ -324,6 +343,17 @@
         .comp-rank { width: 25px; font-weight: bold; text-align: center; }
         .comp-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 5px; color: #ddd; }
         .comp-score { color: var(--p1-color); font-weight: bold; font-family: monospace; }
+        
+        /* 暫停頁面卡片 */
+        .choice-card {
+            background: var(--glass-panel); border: 2px solid var(--glass-border);
+            padding: 30px; border-radius: 20px; text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            max-width: 400px; width: 90%;
+            margin: auto;
+        }
+        .choice-title { font-size: 28px; font-weight: 900; margin-bottom: 10px; color: var(--p1-color); }
+        .choice-desc { color: #ddd; margin-bottom: 25px; font-size: 15px; line-height: 1.5; }
 
         @media (max-height: 600px) {
             h1 { font-size: 32px; }
@@ -393,6 +423,9 @@
                 <div>P2 SCORE <span id="p2-score" style="margin-left:10px; color:white;">0</span></div>
                 <div id="p2-lives" class="lives"></div>
             </div>
+            
+            <!-- 暫停按鈕 (所有模式通用) -->
+            <button id="btn-pause" onclick="pauseGame()">⏸️ 主選單</button>
         </div>
 
         <div id="menu-screen" class="screen active">
@@ -400,7 +433,7 @@
                 <h1>藍循節奏大師</h1>
                 <p class="subtitle">先聆聽四拍節奏，然後擊打出相同的節奏。</p>
                 <div class="season-banner" style="display: flex; flex-direction: column; gap: 5px; border-radius: 15px; padding: 10px 25px; height: auto;">
-                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 14px rgba(74, 222, 128, 0.3);">(30周年校慶特別版)賽季1：2026年10月21日至11月1日</span>
+                    <span class="season-text" style="color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);">賽季1：2026年10月21日至11月1日</span>
                 </div>
             </div>
             
@@ -562,6 +595,19 @@
             </div>
             <div class="screen-footer"><button class="btn btn-start" onclick="resetToMenu()">返回選單</button></div>
         </div>
+
+        <!-- 暫停確認視窗 -->
+        <div id="pause-overlay" class="screen" style="z-index: 100;">
+            <div class="choice-card">
+                <div class="choice-title">暫停遊戲</div>
+                <div class="choice-desc">是否確定放棄當前進度並返回主選單？</div>
+                <div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
+                    <button class="btn btn-secondary" style="flex:1;" onclick="resumeGame()">繼續遊戲</button>
+                    <button class="btn btn-start" style="flex:1; background:#f43f5e; box-shadow:0 0 15px rgba(244,63,94,0.4); border:none;" onclick="quitToMenu()">確定返回</button>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <script>
@@ -579,7 +625,7 @@
         const SEASON1_MAP = "10 10000010 10000010 10000010 10000010 10000010 10000010 10010010 10000010 10000010 10000011 10101011 00000010 10110011 10010010 10010010      10000000 00000010 10000010 10000011 10101011 00000010 10000010 10000010 10101011 00000010 10000010 10000011 10101011 00000010 10110011 10010010 10101011      00000011 10101011 00000011 10101011 00000011 10101011 00000011 10010010 10000000 00101010 10010011 10101010 00100000 00101010 10010010 10101010 10110000      00101010 10010011 10101010 10010010 10000010 10110010 10010010 10000000 00000000";
         
         // 歌詞設定：系統會自動去除空格，並從第 42 個音符 (index: 41) 開始將中文字放入音符中
-        const SEASON1_LYRICS = "藍天碧海春風化雨暖我心無盡 旅途 伴快樂一世間耶穌恩典早已充滿我心裏勤學求道效主愛人樂與學在藍循我在長廊裏禱告你在球場上散步帶着疑問與苦惱也會為我引路我結伴同行邁向天際遇星河書海內奮鬥得到知識再破巨浪你我在藍循實-踐那美夢全然綻放用新世界的光去共創".replace(/\s+/g, '');
+        const SEASON1_LYRICS = "藍天碧海春風化雨暖我心無盡 旅途 伴快樂一世間耶穌恩典早已充滿我心裏勤學求道效主愛人樂與學在藍循我在長廊裏禱告你在球場上散步帶着疑問與苦惱也會為我引路我結伴同行邁向天際遇星河書海內奮鬥得到知識再破巨浪你我在藍循實—踐那美夢全然綻放用新世界的光去共創".replace(/\s+/g, '');
         
         // ==========================================
 
@@ -699,28 +745,56 @@
             updateDescription(); 
         }
 
+        // 暫停與返回選單邏輯
+        function pauseGame() {
+            if (gameState !== 'PLAYING') return;
+            gameState = 'PAUSED';
+            AudioEngine.ctx.suspend();
+            
+            const bgm = document.getElementById('bgm-season1');
+            if (bgm && !bgm.paused) {
+                bgm.pause();
+                session.bgmWasPlaying = true;
+            } else {
+                session.bgmWasPlaying = false;
+            }
+            
+            document.getElementById('pause-overlay').classList.add('active');
+        }
+
+        function resumeGame() {
+            document.getElementById('pause-overlay').classList.remove('active');
+            gameState = 'PLAYING';
+            AudioEngine.ctx.resume();
+            
+            const bgm = document.getElementById('bgm-season1');
+            if (session.bgmWasPlaying && bgm) {
+                bgm.play().catch(e => console.log(e));
+            }
+        }
+
+        function quitToMenu() {
+            document.getElementById('pause-overlay').classList.remove('active');
+            resetToMenu();
+        }
+
         function resetToMenu() {
             gameState = 'MENU';
             timeouts.forEach(clearTimeout);
             if (animId) cancelAnimationFrame(animId);
             
-            // 清除漸弱動畫的計時器
             if (session.fadeInterval) {
                 clearInterval(session.fadeInterval);
                 session.fadeInterval = null;
             }
             
-            // 停止背景音樂及隱藏賽季1專屬字句
             const bgmSeason = document.getElementById('bgm-season1');
-            if(bgmSeason) { 
-                bgmSeason.pause(); 
-                bgmSeason.currentTime = 0; 
-                bgmSeason.volume = 1.0; 
-            }
+            if(bgmSeason) { bgmSeason.pause(); bgmSeason.currentTime = 0; bgmSeason.volume = 1.0; }
             if(AudioEngine.ctx && AudioEngine.ctx.state === 'running') { AudioEngine.ctx.suspend().then(()=>AudioEngine.ctx.resume()); }
             
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
+            document.getElementById('btn-pause').style.display = 'none';
             
             showMenu();
         }
@@ -1035,12 +1109,19 @@
                 config.rounds = config.mode.includes('survival') ? Infinity : parseInt(document.getElementById('round-select').value);
             }
 
-            let initLives = (config.mode === 'progressive' || config.mode === 'season1') ? 5 : 3;
+            let initLives = (config.mode === 'progressive') ? 5 : 3;
+            // 賽季1不設生命值，用無限大表示
+            if (config.mode === 'season1') {
+                initLives = 999;
+            }
 
             const initP = () => ({ score: 0, lives: initLives, notes: [], stats: {p:0,g:0,m:0}, bump: 1, combo: 0, maxCombo: 0 });
             session = { round: 0, nextTime: AudioEngine.ctx.currentTime + 2.0, p1: initP(), p2: initP() };
             
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('hud-p2').style.opacity = config.players === 2 ? 1 : 0;
+            
+            document.getElementById('btn-pause').style.display = 'block'; // 顯示暫停按鈕
+            
             updateHUD(); gameState = 'PLAYING'; timeouts.forEach(clearTimeout); timeouts = []; if(animId) cancelAnimationFrame(animId);
             
             if (config.mode === 'season1') {
@@ -1058,6 +1139,9 @@
             
             const now = AudioEngine.ctx.currentTime;
             const musicStartTime = now + SEASON1_MUSIC_START_DELAY; // 音樂正式開始播放的絕對時間
+            
+            session.bgmStartTime = musicStartTime;
+            session.bgmStarted = false;
             
             // 計算一個十六分音符的長度 (秒)
             const sixteenthDuration = (60 / SEASON1_BPM) / 4; 
@@ -1094,43 +1178,19 @@
                 }
             }
             
-            // 在延遲時間後開始播放音樂
-            timeouts.push(setTimeout(() => {
-                if (gameState === 'PLAYING' && bgm) bgm.play().catch(e => console.log("BGM Error", e));
-            }, SEASON1_MUSIC_START_DELAY * 1000));
-            
             notify("準備開始", "var(--comp-gold)");
             
             // 設定遊戲在最後一顆音符結束後的音樂漸弱 (Fade Out)
             let durationToLastNote = lastNoteTarget > 0 ? (lastNoteTarget - now) : 5;
-            
-            timeouts.push(setTimeout(() => {
-                if (gameState === 'PLAYING' && bgm) {
-                    let fadeSteps = 20;
-                    let fadeOutTime = 2.0; // 2秒內漸弱
-                    let intervalTime = (fadeOutTime * 1000) / fadeSteps;
-                    let volumeStep = 1.0 / fadeSteps;
-                    
-                    session.fadeInterval = setInterval(() => {
-                        if (bgm.volume > volumeStep) {
-                            bgm.volume -= volumeStep;
-                        } else {
-                            bgm.volume = 0;
-                            bgm.pause();
-                            clearInterval(session.fadeInterval);
-                            session.fadeInterval = null;
-                        }
-                    }, intervalTime);
-                }
-            }, (durationToLastNote + 0.5) * 1000));
-            
-            // 在漸弱完全結束後才進入結算畫面
-            timeouts.push(setTimeout(() => {
-                if (gameState === 'PLAYING') endGame();
-            }, (durationToLastNote + 2.5) * 1000));
+            session.endTime = now + durationToLastNote + 0.5;
+            session.ending = false;
         }
 
         function schedule() {
+            if(gameState === 'PAUSED') {
+                timeouts.push(setTimeout(schedule, 100)); // 暫停時持續重試
+                return;
+            }
             if(gameState !== 'PLAYING') return;
 
             if(!config.mode.includes('survival') && config.mode !== 'progressive' && session.round >= config.rounds) { endGame(); return; }
@@ -1147,7 +1207,7 @@
             pattern.forEach((b, idx) => { const target = playStart + b*BEAT; session.p1.notes.push({ target: target, hit: false, missed: false, index: idx }); if(config.players === 2) session.p2.notes.push({ target: target, hit: false, missed: false, index: idx }); });
             
             timeouts.push(setTimeout(() => { 
-                if(gameState!=='PLAYING') return; 
+                if(gameState !== 'PLAYING') return; 
                 session.round++; 
                 updateHUD(); 
                 notify("LISTEN", "var(--p1-color)"); 
@@ -1155,7 +1215,7 @@
             }, (now - AudioEngine.ctx.currentTime)*1000));
             
             timeouts.push(setTimeout(() => { 
-                if(gameState!=='PLAYING') return; 
+                if(gameState !== 'PLAYING') return; 
                 let col = config.mode.includes('vanishing') ? '#d946ef' : '#facc15'; 
                 if(config.mode === 'vanishing-survival') col = '#f87171'; 
                 if(config.mode === 'progressive') col = 'var(--prog-color)';
@@ -1164,12 +1224,45 @@
             
             session.nextTime += (BEAT * 8); timeouts.push(setTimeout(schedule, (session.nextTime - AudioEngine.ctx.currentTime - 0.1)*1000));
         }
+        
         function render() {
+            if(gameState === 'PAUSED') {
+                animId = requestAnimationFrame(render);
+                return;
+            }
             if(gameState !== 'PLAYING') return; 
 
             ctx.clearRect(0, 0, width, height); VFX.update(ctx);
             const now = AudioEngine.ctx.currentTime; 
             const beatSec = getBeatSec();
+            
+            // 賽季1 音樂播放排程 (不受暫停影響)
+            if (config.mode === 'season1' && !session.bgmStarted && now >= session.bgmStartTime) {
+                session.bgmStarted = true;
+                const bgm = document.getElementById('bgm-season1');
+                if (bgm) bgm.play().catch(e => console.log("BGM Error", e));
+            }
+            
+            // 賽季1 結束與淡出處理 (不受暫停影響)
+            if (config.mode === 'season1' && session.endTime && now >= session.endTime && !session.ending) {
+                session.ending = true;
+                let fadeSteps = 20;
+                let fadeOutTime = 2.0; 
+                let intervalTime = (fadeOutTime * 1000) / fadeSteps;
+                let volumeStep = 1.0 / fadeSteps;
+                const bgm = document.getElementById('bgm-season1');
+                
+                session.fadeInterval = setInterval(() => {
+                    if (bgm && bgm.volume > volumeStep) {
+                        bgm.volume -= volumeStep;
+                    } else {
+                        if(bgm) { bgm.volume = 0; bgm.pause(); }
+                        clearInterval(session.fadeInterval);
+                        session.fadeInterval = null;
+                        if(gameState === 'PLAYING') endGame();
+                    }
+                }, intervalTime);
+            }
             
             // 決定音符飛行速度與消失效果
             let speed = getSpeed();
@@ -1349,6 +1442,7 @@
             
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
+            document.getElementById('btn-pause').style.display = 'none';
 
             const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}[config.mode];
             document.getElementById('res-mode').innerText = mName; document.getElementById('res-len').innerText = (config.mode.includes('survival') || config.mode === 'progressive' || config.mode === 'season1') ? "∞" : config.rounds + "R";
