@@ -14,10 +14,11 @@
         :root {
             /* Theme Colors */
             --bg-dark: #020617;
-            --glass-panel: rgba(5, 10, 20, 0.85); 
+            /* 玻璃材質設定 - 提高透明度 */
+            --glass-panel: rgba(15, 25, 45, 0.35); 
             --glass-border: rgba(255, 255, 255, 0.2);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
-            --glass-blur: blur(16px);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            --glass-blur: blur(12px);
             
             /* Colors */
             --p1-color: #22d3ee;
@@ -109,14 +110,22 @@
         .p-4 { left: 90%; width: 4px; height: 4px; animation-duration: 6s; animation-delay: 0.5s; }
         @keyframes floatUp { 0% { bottom: -10px; opacity: 0; } 50% { opacity: 0.6; box-shadow: 0 0 10px white; } 100% { bottom: 100%; opacity: 0; } }
 
-        /* 呼吸燈特效外框 */
+        /* 呼吸燈特效外框 - 調整透明度讓背景透過 */
         #game-wrapper {
             position: relative; width: 100%; max-width: 1100px; height: 100%; max-height: 680px;
-            background: rgba(15, 23, 42, 0.4); border-radius: 24px;
-            overflow: hidden; z-index: 10; backdrop-filter: blur(8px);
+            background: rgba(15, 23, 42, 0.15); border-radius: 24px;
+            overflow: hidden; z-index: 10; backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.1);
             animation: borderPulse 4s infinite alternate;
         }
+
+        /* 針對 iPad 及較高螢幕，將整體遊戲畫面稍微向上調高，避免視角過低 */
+        @media (min-height: 700px) {
+            #game-wrapper {
+                transform: translateY(-4vh);
+            }
+        }
+
         @keyframes borderPulse {
             0% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.15), inset 0 0 15px rgba(34, 211, 238, 0.1); border-color: rgba(34, 211, 238, 0.2); }
             100% { box-shadow: 0 0 60px rgba(244, 114, 182, 0.25), inset 0 0 25px rgba(244, 114, 182, 0.15); border-color: rgba(244, 114, 182, 0.3); }
@@ -128,30 +137,8 @@
         
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; z-index: 20;
-        }
-
-        /* 律動音頻跳動柱 (Equalizer Visualizer) */
-        #equalizer {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 120px;
-            display: flex; align-items: flex-end; justify-content: center; gap: 6px;
-            z-index: 12; opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none;
-        }
-        #equalizer.active { opacity: 1; }
-        .eq-bar {
-            width: 14px;
-            background: linear-gradient(to top, var(--p1-color), var(--p2-color), #facc15);
-            border-radius: 6px 6px 0 0; opacity: 0.8;
-            box-shadow: 0 0 15px rgba(244, 114, 182, 0.6);
-            transform-origin: bottom;
-            animation: eq-bounce 0.5s ease-in-out infinite alternate;
-            animation-play-state: paused;
-        }
-        #equalizer.active .eq-bar { animation-play-state: running; }
-        
-        @keyframes eq-bounce {
-            0% { transform: scaleY(0.15); filter: hue-rotate(0deg); }
-            100% { transform: scaleY(1); filter: hue-rotate(45deg); }
+            display: none; /* 預設隱藏遊戲介面 */
+            flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; z-index: 20;
         }
 
         .hud-bar {
@@ -183,14 +170,15 @@
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); transition: all 0.2s ease-out; z-index: 50;
         }
         
-        /* 暫停按鈕 */
+        /* 暫停/返回主選單 按鈕置中 */
         #btn-pause {
             display: none;
             position: absolute;
             bottom: 25px;
-            left: 25px;
-            padding: 8px 20px;
-            background: rgba(0,0,0,0.6);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 30px;
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             color: white;
@@ -202,7 +190,11 @@
             font-size: 16px;
             pointer-events: auto;
         }
-        #btn-pause:hover { background: rgba(255,255,255,0.15); border-color: white; transform: scale(1.05); }
+        #btn-pause:hover { 
+            background: rgba(255,255,255,0.2); 
+            border-color: white; 
+            transform: translateX(-50%) scale(1.05); 
+        }
 
         /* 賽季1 專屬標語特效：圓潤可愛字體、柔和色彩、錯開跳動 */
         .s1-slogan {
@@ -260,9 +252,10 @@
         .hit-popup { position: absolute; font-weight: 900; font-size: 48px; transform: translate(-50%, -50%); pointer-events: none; animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 20px currentColor; z-index: 25; }
         @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(1); } }
 
+        /* 畫面遮罩 - 調低不透明度以配合毛玻璃 */
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px);
+            background: rgba(2, 6, 23, 0.4); backdrop-filter: blur(3px);
             z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
             display: flex; flex-direction: column; align-items: center; 
             box-sizing: border-box; padding: 20px 30px;
@@ -293,11 +286,13 @@
             overflow: hidden; 
         }
 
+        /* 增強玻璃面板視覺 */
         .control-panel {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 650px;
             background: var(--glass-panel);
             backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border); 
+            box-shadow: var(--glass-shadow), inset 0 0 15px rgba(255, 255, 255, 0.05);
             padding: 20px 30px; border-radius: 20px; margin: 5px 0; flex-shrink: 0; 
         }
         .control-group.full { grid-column: span 2; }
@@ -306,7 +301,7 @@
         
         select, .btn, input {
             padding: 10px; border-radius: 8px; 
-            background: rgba(0, 0, 0, 0.7); 
+            background: rgba(0, 0, 0, 0.35); /* 半透明輸入框 */
             border: 1px solid rgba(255,255,255,0.2); 
             backdrop-filter: blur(5px);
             color: white; font-family: inherit; font-size: 14px; 
@@ -314,21 +309,21 @@
         }
         select:hover:not(:disabled), .btn:hover:not(:disabled), input:focus:not(:disabled) { 
             border-color: var(--p1-color); 
-            background: rgba(0, 0, 0, 0.9); 
+            background: rgba(0, 0, 0, 0.6); 
             box-shadow: 0 0 15px rgba(34,211,238,0.2); 
         }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
         .control-group.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
 
         .mode-description {
-            grid-column: span 2; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--glass-border);
+            grid-column: span 2; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--glass-border);
             border-radius: 10px; padding: 10px; font-size: 13px; color: #e2e8f0; text-align: center;
             line-height: 1.4; margin-top: 0; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
         
         .toggle-wrapper { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(10px, 1fr)); 
-            background: rgba(0,0,0,0.7); 
+            background: rgba(0,0,0,0.35); 
             border-radius: 8px; padding: 3px; gap: 3px; 
             border: 1px solid rgba(255,255,255,0.15); 
         }
@@ -428,7 +423,8 @@
         
         /* 暫停頁面卡片 */
         .choice-card {
-            background: var(--glass-panel); border: 2px solid var(--glass-border);
+            background: rgba(15, 25, 45, 0.65); border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
             padding: 30px; border-radius: 20px; text-align: center;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
             max-width: 400px; width: 90%;
@@ -509,9 +505,6 @@
                 <span style="--i:7; color:#ffb3ff;">才</span>
             </div>
             
-            <!-- 律動音頻跳動柱容器 -->
-            <div id="equalizer"></div>
-            
             <div class="hud-bar p1-hud" id="hud-p1">
                 <div>P1 SCORE <span id="p1-score" style="margin-left:10px; color:white;">0</span></div>
                 <div id="p1-lives" class="lives"></div> 
@@ -524,7 +517,7 @@
             </div>
             
             <!-- 暫停按鈕 (所有模式通用) -->
-            <button id="btn-pause" onclick="pauseGame()">⏸️ 主選單</button>
+            <button id="btn-pause" onclick="pauseGame()">返回主選單</button>
         </div>
 
         <div id="menu-screen" class="screen active">
@@ -737,22 +730,6 @@
         let tokenClient;
 
         window.onload = function () {
-            // 初始化跳動柱
-            const eqContainer = document.getElementById('equalizer');
-            if(eqContainer) {
-                for (let i = 0; i < 35; i++) {
-                    const bar = document.createElement('div');
-                    bar.className = 'eq-bar';
-                    const dur = (Math.random() * 0.4 + 0.2).toFixed(2);
-                    const delay = -(Math.random() * 2).toFixed(2);
-                    const height = Math.floor(Math.random() * 60 + 40); // 40px - 100px base height
-                    bar.style.animationDuration = `${dur}s`;
-                    bar.style.animationDelay = `${delay}s`;
-                    bar.style.height = `${height}px`;
-                    eqContainer.appendChild(bar);
-                }
-            }
-
             if (window.google) {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: '573911894747-0c28hfr0bmkjnn8pkm2msg6sjal1thqe.apps.googleusercontent.com',
@@ -896,7 +873,13 @@
         function resetToMenu() {
             gameState = 'MENU';
             timeouts.forEach(clearTimeout);
-            if (animId) cancelAnimationFrame(animId);
+            
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            // 清除畫布，避免殘留遊戲畫面
+            ctx.clearRect(0, 0, width, height);
             
             if (session.fadeInterval) {
                 clearInterval(session.fadeInterval);
@@ -907,9 +890,9 @@
             if(bgmSeason) { bgmSeason.pause(); bgmSeason.currentTime = 0; bgmSeason.volume = 1.0; }
             if(AudioEngine.ctx && AudioEngine.ctx.state === 'running') { AudioEngine.ctx.suspend().then(()=>AudioEngine.ctx.resume()); }
             
+            document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
-            document.getElementById('equalizer').classList.remove('active');
             document.getElementById('btn-pause').style.display = 'none';
             
             showMenu();
@@ -1236,6 +1219,7 @@
             
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('hud-p2').style.opacity = config.players === 2 ? 1 : 0;
             
+            document.getElementById('ui-layer').style.display = 'flex'; // 顯示遊戲 UI
             document.getElementById('btn-pause').style.display = 'block'; // 顯示暫停按鈕
             
             updateHUD(); gameState = 'PLAYING'; timeouts.forEach(clearTimeout); timeouts = []; if(animId) cancelAnimationFrame(animId);
@@ -1294,12 +1278,9 @@
                 }
             }
             
-            // 在延遲時間後啟動音樂與頻譜
+            // 在延遲時間後啟動音樂
             timeouts.push(setTimeout(() => {
-                if (gameState === 'PLAYING') {
-                    if(bgm) bgm.play().catch(e => console.log("BGM Error", e));
-                    document.getElementById('equalizer').classList.add('active'); // 啟動跳動柱
-                }
+                if (gameState === 'PLAYING' && bgm) bgm.play().catch(e => console.log("BGM Error", e));
             }, SEASON1_MUSIC_START_DELAY * 1000));
             
             notify("準備開始", "var(--comp-gold)");
@@ -1360,10 +1341,16 @@
             const now = AudioEngine.ctx.currentTime; 
             const beatSec = getBeatSec();
             
+            // 賽季1 音樂播放排程 (不受暫停影響)
+            if (config.mode === 'season1' && !session.bgmStarted && now >= session.bgmStartTime) {
+                session.bgmStarted = true;
+                const bgm = document.getElementById('bgm-season1');
+                if (bgm) bgm.play().catch(e => console.log("BGM Error", e));
+            }
+            
             // 賽季1 結束與淡出處理 (不受暫停影響)
             if (config.mode === 'season1' && session.endTime && now >= session.endTime && !session.ending) {
                 session.ending = true;
-                document.getElementById('equalizer').classList.remove('active'); // 收起跳動柱
                 
                 let fadeSteps = 20;
                 let fadeOutTime = 2.0; 
@@ -1547,8 +1534,16 @@
         function renderHearts(elementId, count) { const container = document.getElementById(elementId); let html = ''; for(let i=0; i<Math.max(0, count); i++) { html += '<span class="heart">❤</span>'; } container.innerHTML = html; }
         function showFeedback(text, x, y, color) { const el = document.createElement('div'); el.className = 'hit-popup'; el.innerText = text; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = color; document.getElementById('game-wrapper').appendChild(el); setTimeout(()=>el.remove(), 500); }
         function notify(text, color) { const el = document.getElementById('center-notify'); el.innerText = text; el.style.color = color; el.style.opacity = 1; if (config.players === 1) { el.style.top = "75%"; } else { el.style.top = "50%"; } el.style.transform = "translate(-50%, -50%) scale(1.2)"; setTimeout(() => { el.style.opacity = 0; el.style.transform = "translate(-50%, -50%) scale(1)"; }, 600); }
+        
         function endGame() {
             gameState = 'END'; document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('result-screen').classList.add('active'); timeouts.forEach(clearTimeout);
+            
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            // 清除畫布，避免殘留遊戲畫面
+            ctx.clearRect(0, 0, width, height);
             
             if (session.fadeInterval) {
                 clearInterval(session.fadeInterval);
@@ -1558,9 +1553,9 @@
             const bgmSeason = document.getElementById('bgm-season1');
             if(bgmSeason) { bgmSeason.pause(); bgmSeason.volume = 1.0; } // 確保結束時重置音量
             
+            document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
-            document.getElementById('equalizer').classList.remove('active');
             document.getElementById('btn-pause').style.display = 'none';
 
             const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}[config.mode];
@@ -1574,6 +1569,7 @@
             const uploadUI = document.getElementById('upload-ui'); const submitBtn = document.getElementById('btn-submit');
             if(config.players === 1) { document.getElementById('leaderboard-display-result').classList.add('active'); uploadUI.style.display = 'block'; document.getElementById('upload-success-msg').style.display = 'none'; submitBtn.disabled = false; submitBtn.innerText = "確認上傳"; document.getElementById('up-sid').value = ''; document.getElementById('up-guest-name').value = ''; setUploadRole('student'); } else { document.getElementById('leaderboard-display-result').classList.remove('active'); }
         }
+        
         function createResultCard(pid, data) {
             const total = data.stats.p + data.stats.g + data.stats.m; const acc = total===0 ? 0 : Math.round(((data.stats.p + data.stats.g)/total)*100);
             let rank='D', rCol='var(--rank-d)'; if(acc===100){rank='S';rCol='var(--rank-s)'} else if(acc>=90){rank='A';rCol='var(--rank-a)'} else if(acc>=76){rank='B';rCol='var(--rank-b)'} else if(acc>=60){rank='C';rCol='var(--rank-c)'}
