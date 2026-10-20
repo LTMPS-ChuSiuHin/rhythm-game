@@ -239,16 +239,68 @@
             50% { transform: translateY(-12px) rotate(4deg) scale(1.15); filter: brightness(1.2); }
         }
 
+        /* 吉祥物圖片特效 */
+        .mascot {
+            position: absolute;
+            bottom: -10px;
+            width: 180px;
+            height: auto;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform: translateY(30px);
+        }
+        .mascot.visible {
+            opacity: 1;
+            transform: translateY(0);
+            animation: mascotBop 2.5s infinite alternate ease-in-out;
+        }
+        #mascot-left { left: 100px; }
+        #mascot-right { right: 100px; }
+
+        @keyframes mascotBop {
+            0% { transform: translateY(0px) rotate(-3deg); }
+            100% { transform: translateY(-12px) rotate(3deg); }
+        }
+
+        /* COMBO 進階特效 (Fever / Hyper) */
         .combo-popup {
             position: absolute; font-weight: 900; font-size: 48px; color: #facc15; text-shadow: 0 0 10px #b45309, 0 0 20px #facc15;
             transform: translate(-50%, -50%); pointer-events: none; opacity: 0; z-index: 40;
             font-family: 'Segoe UI', sans-serif; font-style: italic; animation: comboPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
+        
+        .combo-fever {
+            color: #ff5722; 
+            text-shadow: 0 0 15px #ffeb3b, 0 0 30px #ff9800, 0 0 45px #f44336;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        
+        .combo-hyper {
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255,255,255,0.8);
+            transform: translate(-50%, -50%) scale(1.2);
+            animation: hyperPop 0.6s ease-out forwards, aurora-flow 2s infinite linear;
+        }
+
+        /* 調整過關文字與 Combo 向上平移，避免重疊 */
         @keyframes comboPop {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
             20% { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
             100% { opacity: 0; transform: translate(-50%, -80%) scale(1.0); }
         }
+        
+        @keyframes hyperPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -60%) scale(1.4); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(1.2); }
+        }
+
         .hit-popup { position: absolute; font-weight: 900; font-size: 48px; transform: translate(-50%, -50%); pointer-events: none; animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 20px currentColor; z-index: 25; }
         @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(1); } }
 
@@ -450,9 +502,13 @@
             #season1-slogan-top { top: calc(50% - 150px); }
             #season1-slogan-bottom { top: calc(50% + 110px); }
             .season-text { font-size: 14px; }
+            .mascot { width: 130px; }
+            #mascot-left { left: 50px; }
+            #mascot-right { right: 50px; }
         }
     </style>
 </head>
+
 <body>
     <!-- 賽季1 背景音樂 -->
     <audio id="bgm-season1" src="https://ltmps-chusiuhin.github.io/rhythm-game/30.mp3" preload="auto" style="display:none;"></audio>
@@ -505,6 +561,10 @@
                 <span style="--i:7; color:#ffb3ff;">才</span>
             </div>
             
+            <!-- 賽季1 專屬吉祥物 -->
+            <img id="mascot-left" src="left.png" class="mascot" alt="">
+            <img id="mascot-right" src="right.png" class="mascot" alt="">
+            
             <div class="hud-bar p1-hud" id="hud-p1">
                 <div>P1 SCORE <span id="p1-score" style="margin-left:10px; color:white;">0</span></div>
                 <div id="p1-lives" class="lives"></div> 
@@ -516,7 +576,7 @@
                 <div id="p2-lives" class="lives"></div>
             </div>
             
-            <!-- 暫停按鈕 (所有模式通用) -->
+            <!-- 返回主選單 按鈕置中 -->
             <button id="btn-pause" onclick="pauseGame()">返回主選單</button>
         </div>
 
@@ -701,7 +761,7 @@
         </div>
 
     </div>
-    
+
     <script>
         // ==========================================
         // 🎵 賽季1：自定義音樂與譜面參數設定 🎵
@@ -893,6 +953,8 @@
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
+            document.getElementById('mascot-left').classList.remove('visible');
+            document.getElementById('mascot-right').classList.remove('visible');
             document.getElementById('btn-pause').style.display = 'none';
             
             showMenu();
@@ -1143,9 +1205,71 @@
         }
 
         const VFX = {
-            particles: [],
-            init() { this.particles = []; for(let i=0; i<100; i++) { this.particles.push({ x: Math.random() * 1100, y: Math.random() * 680, size: Math.random() * 2 + 0.5, speed: Math.random() * 4 + 1, alpha: Math.random() * 0.6 + 0.1, color: Math.random() > 0.5 ? '#22d3ee' : '#f472b6' }); } },
-            update(ctx) { this.particles.forEach(p => { p.x -= p.speed; if(p.x < -10) { p.x = 1110; p.y = Math.random() * 680; } ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); }); ctx.globalAlpha = 1; }
+            particles: [], confetti: [], bursts: [],
+            init() { 
+                this.particles = []; this.confetti = []; this.bursts = [];
+                for(let i=0; i<100; i++) { 
+                    this.particles.push({ x: Math.random() * 1100, y: Math.random() * 680, size: Math.random() * 2 + 0.5, speed: Math.random() * 4 + 1, alpha: Math.random() * 0.6 + 0.1, color: Math.random() > 0.5 ? '#22d3ee' : '#f472b6' }); 
+                }
+                // 賽季1 飄落彩帶/金箔
+                for(let i=0; i<60; i++) {
+                    this.confetti.push({
+                        x: Math.random() * 1100, y: Math.random() * 680,
+                        w: Math.random() * 8 + 4, h: Math.random() * 8 + 4,
+                        speedY: Math.random() * 2 + 1, speedX: Math.random() * 2 - 1,
+                        rot: Math.random() * 360, rotSpeed: Math.random() * 5 - 2.5,
+                        color: Math.random() > 0.5 ? '#fbbf24' : '#fbcfe8'
+                    });
+                }
+            },
+            update(ctx) { 
+                this.particles.forEach(p => { p.x -= p.speed; if(p.x < -10) { p.x = 1110; p.y = Math.random() * 680; } ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); }); 
+                ctx.globalAlpha = 1; 
+                
+                if (config.mode === 'season1') {
+                    this.confetti.forEach(c => {
+                        c.y += c.speedY; c.x += c.speedX; c.rot += c.rotSpeed;
+                        if(c.y > 680 + 20) { c.y = -20; c.x = Math.random() * 1100; }
+                        ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.rot * Math.PI / 180);
+                        ctx.fillStyle = c.color; ctx.globalAlpha = 0.8;
+                        ctx.fillRect(-c.w/2, -c.h/2, c.w, c.h);
+                        ctx.restore();
+                    });
+                }
+                
+                // 渲染圓形散射光環 (Burst / Shockwave)
+                for(let i = this.bursts.length - 1; i >= 0; i--) {
+                    let b = this.bursts[i];
+                    b.life -= 0.05;
+                    if(b.life <= 0) { this.bursts.splice(i, 1); continue; }
+                    
+                    ctx.save();
+                    ctx.globalCompositeOperation = "lighter";
+                    ctx.globalAlpha = b.life;
+                    ctx.strokeStyle = b.color;
+                    
+                    // 擴散的主光圈
+                    let radius = 45 + (1 - b.life) * 80;
+                    ctx.beginPath();
+                    ctx.arc(HIT_X, b.y, radius, 0, Math.PI*2);
+                    ctx.lineWidth = 6 * b.life;
+                    ctx.stroke();
+                    
+                    // 放射狀的散射光線
+                    for(let j=0; j<8; j++) {
+                        let angle = j * (Math.PI / 4) + (1-b.life)*Math.PI; 
+                        let r1 = 45 + (1 - b.life) * 100;
+                        let r2 = r1 + 30 * b.life;
+                        ctx.beginPath();
+                        ctx.moveTo(HIT_X + Math.cos(angle)*r1, b.y + Math.sin(angle)*r1);
+                        ctx.lineTo(HIT_X + Math.cos(angle)*r2, b.y + Math.sin(angle)*r2);
+                        ctx.lineWidth = 4 * b.life;
+                        ctx.lineCap = "round";
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
         };
         const AudioEngine = {
             ctx: null,
@@ -1196,9 +1320,11 @@
             if (config.mode === 'season1') {
                 config.bpm = SEASON1_BPM; config.rounds = Infinity; config.players = 1; config.diff = 'easy'; 
                 
-                // 顯示賽季1專屬字句
+                // 顯示賽季1專屬字句與吉祥物
                 document.getElementById('season1-slogan-top').classList.add('visible');
                 document.getElementById('season1-slogan-bottom').classList.add('visible');
+                document.getElementById('mascot-left').classList.add('visible');
+                document.getElementById('mascot-right').classList.add('visible');
                 
             } else if (config.mode === 'progressive') {
                 config.bpm = 95; config.rounds = Infinity; config.players = 1; config.diff = 'easy'; 
@@ -1457,7 +1583,7 @@
                 if(dt < -WINDOWS.MISS && !n.missed) { 
                     n.missed = true; 
                     handleResult(pid, 'MISS'); 
-                    showFeedback('MISS', HIT_X, y, 'var(--rank-d)'); 
+                    showFeedback('MISS', HIT_X, y - 90, 'var(--rank-d)'); 
                 }
             });
         }
@@ -1480,7 +1606,14 @@
                 best.hit = true; let rating = 'POOR', rCol = 'var(--rank-b)';
                 if(minDiff < WINDOWS.PERF) { rating = 'PERFECT'; rCol = 'var(--rank-s)'; }
                 else if(minDiff < WINDOWS.GOOD) { rating = 'GOOD'; rCol = 'var(--rank-a)'; }
-                handleResult(pid, rating); showFeedback(rating, HIT_X, y, rCol);
+                
+                // 新增圓形向外散射特效
+                if(rating === 'PERFECT' || rating === 'GOOD') {
+                    let burstColor = rating === 'PERFECT' ? '#22d3ee' : '#4ade80';
+                    VFX.bursts.push({ y: y, color: burstColor, life: 1.0 });
+                }
+                
+                handleResult(pid, rating); showFeedback(rating, HIT_X, y - 90, rCol);
             }
         }
         function handleResult(pid, rating) {
@@ -1490,7 +1623,7 @@
             
             if(rating === 'PERFECT' || rating === 'GOOD') { 
                 data.combo++; if(data.combo > data.maxCombo) data.maxCombo = data.combo;
-                if(data.combo >= 10 && data.combo % 10 === 0) { const y = config.players === 1 ? height/2 : (pid===1 ? height*0.28 : height*0.72); showCombo(data.combo, HIT_X, y - 50); }
+                if(data.combo >= 10 && data.combo % 10 === 0) { const y = config.players === 1 ? height/2 : (pid===1 ? height*0.28 : height*0.72); showCombo(data.combo, HIT_X, y - 140); }
                 if(rating === 'PERFECT') { data.score += Math.round(100 * multiplier); data.stats.p++; } else { data.score += Math.round(50 * multiplier); data.stats.g++; }
             } else { 
                 data.stats.m++; 
@@ -1501,7 +1634,13 @@
             updateHUD();
         }
         function showCombo(count, x, y) {
-            const el = document.createElement('div'); el.className = 'combo-popup'; el.innerText = count + " COMBO!";
+            const el = document.createElement('div'); el.className = 'combo-popup'; 
+            
+            // 加入 Combo 連擊進階狀態
+            if(count >= 50) el.classList.add('combo-hyper');
+            else if(count >= 20) el.classList.add('combo-fever');
+            
+            el.innerText = count + " COMBO!";
             el.style.left = x + 'px'; el.style.top = y + 'px'; document.getElementById('game-wrapper').appendChild(el); setTimeout(()=>el.remove(), 600);
         }
         function loseLife(pid) {
@@ -1556,6 +1695,8 @@
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('season1-slogan-top').classList.remove('visible');
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
+            document.getElementById('mascot-left').classList.remove('visible');
+            document.getElementById('mascot-right').classList.remove('visible');
             document.getElementById('btn-pause').style.display = 'none';
 
             const mName = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1'}[config.mode];
@@ -1569,7 +1710,6 @@
             const uploadUI = document.getElementById('upload-ui'); const submitBtn = document.getElementById('btn-submit');
             if(config.players === 1) { document.getElementById('leaderboard-display-result').classList.add('active'); uploadUI.style.display = 'block'; document.getElementById('upload-success-msg').style.display = 'none'; submitBtn.disabled = false; submitBtn.innerText = "確認上傳"; document.getElementById('up-sid').value = ''; document.getElementById('up-guest-name').value = ''; setUploadRole('student'); } else { document.getElementById('leaderboard-display-result').classList.remove('active'); }
         }
-        
         function createResultCard(pid, data) {
             const total = data.stats.p + data.stats.g + data.stats.m; const acc = total===0 ? 0 : Math.round(((data.stats.p + data.stats.g)/total)*100);
             let rank='D', rCol='var(--rank-d)'; if(acc===100){rank='S';rCol='var(--rank-s)'} else if(acc>=90){rank='A';rCol='var(--rank-a)'} else if(acc>=76){rank='B';rCol='var(--rank-b)'} else if(acc>=60){rank='C';rCol='var(--rank-c)'}
