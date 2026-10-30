@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>藍循音樂世界：節奏大師 & 演奏家</title>
+    <title>藍循音樂世界：節奏大師 & 演奏家(測試版)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -125,41 +125,212 @@
         .tab-view-container { width: 100%; flex: 1; display: none; flex-direction: column; align-items: center; justify-content: space-between; overflow: hidden; }
         .tab-view-container.active { display: flex; }
 
-        /* 藍循演奏家專屬選單樣式 */
+        /* =========================================
+           🎹 藍循演奏家(測試版)：高清銳利版光碟卡片輪播選曲介面
+           ========================================= */
         .pianist-title {
-            font-size: 40px; margin: 0 0 4px 0; font-weight: 900; letter-spacing: 4px; color: #fef3c7;
+            font-size: 38px; margin: 0 0 2px 0; font-weight: 900; letter-spacing: 4px; color: #fef3c7;
             text-shadow: 0 0 20px rgba(251, 191, 36, 0.7), 0 0 40px rgba(217, 119, 6, 0.5);
             animation: titleFloat 3s ease-in-out infinite;
         }
-        .pianist-panel {
-            border-color: rgba(251, 191, 36, 0.35) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(251, 191, 36, 0.08) !important;
+        .carousel-stage {
+            position: relative; width: 100%; max-width: 900px; height: 320px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 4px 0;
         }
-        .pianist-panel label { color: var(--pianist-gold) !important; }
-        .song-preview-card {
-            grid-column: span 2; display: flex; align-items: center; justify-content: space-between;
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(15, 23, 42, 0.65));
-            border: 1px solid rgba(251, 191, 36, 0.35); border-radius: 14px; padding: 12px 20px; gap: 15px;
+        .carousel-track {
+            position: relative; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
         }
-        .song-preview-left { display: flex; align-items: center; gap: 15px; }
-        .song-disc {
-            width: 50px; height: 50px; border-radius: 50%;
-            background: radial-gradient(circle, #020617 22%, #fbbf24 24%, #d97706 45%, #1e293b 70%);
-            border: 2px solid rgba(251, 191, 36, 0.7); box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
-            animation: spinDisc 8s linear infinite; flex-shrink: 0;
+        .song-carousel-card {
+            position: absolute; width: 320px; height: 300px;
+            border-radius: 26px; padding: 22px 24px; box-sizing: border-box;
+            background: linear-gradient(160deg, #1e293b 0%, #0f172a 60%, #020617 100%);
+            border: 2px solid rgba(255, 255, 255, 0.22);
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.38s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+        .song-carousel-card.active {
+            transform: translateX(0) scale(1);
+            opacity: 1; z-index: 10;
+            border-color: var(--card-accent, #fbbf24);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85), 0 0 32px var(--card-glow, rgba(251, 191, 36, 0.45));
+        }
+        .song-carousel-card.prev {
+            transform: translateX(-270px) scale(0.84);
+            opacity: 0.65; z-index: 5;
+        }
+        .song-carousel-card.prev:hover {
+            opacity: 0.9;
+            transform: translateX(-260px) scale(0.87);
+        }
+        .song-carousel-card.next {
+            transform: translateX(270px) scale(0.84);
+            opacity: 0.65; z-index: 5;
+        }
+        .song-carousel-card.next:hover {
+            opacity: 0.9;
+            transform: translateX(260px) scale(0.87);
+        }
+        .song-carousel-card.hidden {
+            transform: translateX(0) scale(0.5);
+            opacity: 0; pointer-events: none; z-index: 1;
+        }
+
+        /* 光碟唱片設計 */
+        .disc-wrapper {
+            position: relative; width: 142px; height: 142px;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 10px;
+        }
+        .disc-glow-ring {
+            position: absolute; width: 152px; height: 152px; border-radius: 50%;
+            border: 2px dashed var(--card-accent, #fbbf24);
+            opacity: 0.55; pointer-events: none;
+        }
+        .song-carousel-card.active .disc-glow-ring {
+            animation: spinDiscReverse 18s linear infinite;
+            opacity: 0.85;
+        }
+        .disc-vinyl {
+            width: 136px; height: 136px; border-radius: 50%;
+            background: 
+                radial-gradient(circle, #020617 13%, var(--card-accent, #fbbf24) 15%, var(--card-accent-dark, #d97706) 32%, #0f172a 34%, #1e293b 48%, #0f172a 50%, #334155 64%, #090d16 67%, #1e293b 100%);
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 0 0 25px var(--card-glow, rgba(251, 191, 36, 0.4)), inset 0 0 15px rgba(0,0,0,0.8);
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .disc-vinyl::before {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            background: conic-gradient(
+                transparent 0deg, rgba(255,255,255,0.22) 25deg, transparent 55deg,
+                transparent 180deg, rgba(255,255,255,0.22) 205deg, transparent 235deg
+            );
+            border-radius: 50%;
+        }
+        .song-carousel-card.active .disc-vinyl {
+            animation: spinDisc 9s linear infinite;
+            border-color: var(--card-accent, #fbbf24);
+        }
+        .disc-center-icon {
+            font-size: 22px; z-index: 2; pointer-events: none;
         }
         @keyframes spinDisc { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .song-meta-title { font-size: 18px; font-weight: 900; color: #fef3c7; letter-spacing: 1px; }
-        .song-meta-sub { font-size: 12px; color: #cbd5e1; margin-top: 3px; }
-        .song-badge {
-            background: rgba(251, 191, 36, 0.2); border: 1px solid var(--pianist-gold);
-            color: var(--pianist-gold); padding: 5px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 800; white-space: nowrap;
+        @keyframes spinDiscReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+
+        .card-track-num {
+            position: absolute; top: 16px; left: 20px;
+            font-size: 13px; font-weight: 900; letter-spacing: 1.5px;
+            color: var(--card-accent, #fbbf24);
         }
+        .card-level-pill {
+            position: absolute; top: 14px; right: 18px;
+            background: #020617;
+            border: 1.5px solid var(--card-accent, #fbbf24);
+            color: #ffffff;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 13px; font-weight: 900;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        }
+        .card-info-box {
+            text-align: center; width: 100%; margin-top: 10px;
+        }
+        .card-song-title {
+            font-size: 22px; font-weight: 900; color: #ffffff;
+            letter-spacing: 1px; margin-bottom: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+        }
+        .card-meta-footer {
+            display: flex; gap: 10px; justify-content: center; width: 100%;
+            margin-top: 8px; padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .card-meta-tag {
+            font-size: 13px; font-weight: 800; color: #ffffff;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px 12px; border-radius: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* 左右切換圓形按鈕 */
+        .carousel-nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 52px; height: 52px; border-radius: 50%;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1.5px solid rgba(251, 191, 36, 0.55);
+            color: #fef3c7; font-size: 22px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 25; transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        .carousel-nav-btn:hover {
+            background: rgba(251, 191, 36, 0.9); color: #020617;
+            border-color: #fff; transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.6);
+        }
+        .carousel-nav-btn.prev-btn { left: 25px; }
+        .carousel-nav-btn.next-btn { right: 25px; }
+
+        /* 輪播指示圓點與快速設定狀態列 */
+        .carousel-bottom-bar {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            margin-top: 2px; z-index: 20;
+        }
+        .carousel-dots {
+            display: flex; gap: 8px; justify-content: center;
+        }
+        .carousel-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer; transition: all 0.3s;
+        }
+        .carousel-dot.active {
+            width: 26px; border-radius: 10px;
+            background: var(--pianist-gold);
+            box-shadow: 0 0 10px var(--pianist-gold);
+        }
+        .pianist-status-strip {
+            display: flex; gap: 10px; align-items: center; justify-content: center;
+            background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(251, 191, 36, 0.35);
+            padding: 6px 18px; border-radius: 30px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pianist-status-strip:hover {
+            border-color: var(--pianist-gold);
+            background: rgba(251, 191, 36, 0.15);
+        }
+        .status-pill-item {
+            font-size: 13px; color: #f8fafc; font-weight: 700;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .status-pill-item b { color: var(--pianist-gold); }
+
         .btn-pianist-start {
             background: linear-gradient(90deg, rgba(251, 191, 36, 0.92), rgba(217, 119, 6, 0.92)) !important;
             color: #020617 !important; box-shadow: 0 0 30px rgba(251, 191, 36, 0.4) !important;
         }
+
+        /* 演奏家設定 Modal 視窗 */
+        .settings-card {
+            background: rgba(15, 25, 45, 0.92); border: 1px solid rgba(251, 191, 36, 0.45);
+            backdrop-filter: blur(18px); padding: 26px 32px; border-radius: 24px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.85), inset 0 0 20px rgba(251, 191, 36, 0.08);
+            max-width: 480px; width: 92%; margin: auto; text-align: left;
+        }
+        .settings-title {
+            font-size: 24px; font-weight: 900; color: var(--pianist-gold);
+            text-align: center; margin-bottom: 18px; letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+        .settings-group { margin-bottom: 14px; }
+        .settings-group label { color: var(--pianist-gold); font-size: 12px; margin-bottom: 5px; }
 
         canvas { display: block; width: 100%; height: 100%; }
         .touch-layer { position: absolute; left: 0; width: 100%; height: 50%; z-index: 10; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -199,7 +370,7 @@
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); transition: all 0.2s ease-out; z-index: 50;
         }
         
-        /* 返回主選單按鈕：統一固定於畫面下方正中央 */
+        /* 返回主選單按鈕：節奏大師在下方中央；藍循演奏家則移到右上角 COMBO 的正下方 */
         #btn-pause {
             display: none; position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
             padding: 8px 30px; background: rgba(0,0,0,0.55); border: 1px solid var(--glass-border);
@@ -207,6 +378,22 @@
             backdrop-filter: blur(5px); transition: 0.2s; font-size: 16px; pointer-events: auto;
         }
         #btn-pause:hover { background: rgba(255,255,255,0.2); border-color: white; transform: translateX(-50%) scale(1.05); }
+        #btn-pause.pianist-pos {
+            bottom: auto;
+            top: 82px;
+            left: auto;
+            right: 25px;
+            transform: none;
+            padding: 6px 18px;
+            font-size: 13px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.75);
+        }
+        #btn-pause.pianist-pos:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+            transform: scale(1.05);
+        }
 
         .s1-slogan {
             position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 15px;
@@ -246,21 +433,21 @@
             text-shadow: 0 0 20px rgba(255,255,255,0.8); transform: translate(-50%, -50%) scale(1.2);
             animation: hyperPop 0.6s ease-out forwards, aurora-flow 2s infinite linear;
         }
-        /* 連續 Charming 專屬華麗彈出特效 */
+        /* 連續 Charming 縮小版提示特效，避免遮擋視線影響遊玩 */
         .charming-streak-popup {
-            position: absolute; font-weight: 900; font-size: 38px;
+            position: absolute; font-weight: 900; font-size: 22px;
             background: linear-gradient(90deg, #fef08a, #fbbf24, #f472b6, #22d3ee, #fef08a);
             background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent;
-            filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.85));
+            filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
             transform: translate(-50%, -50%); pointer-events: none; opacity: 0; z-index: 45;
-            font-family: 'Segoe UI', sans-serif; letter-spacing: 2px; white-space: nowrap;
-            animation: charmingBannerPop 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            font-family: 'Segoe UI', sans-serif; letter-spacing: 1.5px; white-space: nowrap;
+            animation: charmingBannerPop 0.65s ease-out forwards;
         }
         @keyframes charmingBannerPop {
-            0% { opacity: 0; transform: translate(-50%, -40%) scale(0.4); }
-            25% { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
-            80% { opacity: 1; transform: translate(-50%, -55%) scale(1.0); }
-            100% { opacity: 0; transform: translate(-50%, -70%) scale(0.9); }
+            0% { opacity: 0; transform: translate(-50%, -40%) scale(0.7); }
+            25% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05); }
+            80% { opacity: 0.9; transform: translate(-50%, -55%) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -65%) scale(0.95); }
         }
         @keyframes comboPop {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
@@ -273,17 +460,14 @@
             100% { opacity: 0; transform: translate(-50%, -80%) scale(1.2); }
         }
         .hit-popup { position: absolute; font-weight: 900; font-size: 36px; transform: translate(-50%, -50%); pointer-events: none; animation: popUp 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 20px currentColor; z-index: 25; white-space: nowrap; text-align: center; }
-        .hit-sub-bonus { display: block; font-size: 14px; color: #fef08a; letter-spacing: 1px; text-shadow: 0 0 8px #f59e0b; margin-top: -4px; }
         @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(1); } }
 
-        /* HUD 連續 Charming 徽章 */
+        /* HUD 連續 Charming 縮小版徽章 */
         .charming-badge {
-            background: linear-gradient(90deg, rgba(251, 191, 36, 0.25), rgba(244, 114, 182, 0.25));
-            border: 1px solid #fbbf24; color: #fef08a; padding: 2px 10px; border-radius: 20px;
-            font-size: 13px; font-weight: 900; box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
-            animation: badgePulse 0.8s infinite alternate;
+            background: rgba(251, 191, 36, 0.18);
+            border: 1px solid rgba(251, 191, 36, 0.65); color: #fef08a; padding: 2px 8px; border-radius: 12px;
+            font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
         }
-        @keyframes badgePulse { 0% { transform: scale(1); } 100% { transform: scale(1.08); box-shadow: 0 0 20px rgba(251, 191, 36, 0.85); } }
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -424,6 +608,15 @@
         }
         .choice-title { font-size: 28px; font-weight: 900; margin-bottom: 10px; color: var(--p1-color); }
         .choice-desc { color: #ddd; margin-bottom: 25px; font-size: 15px; line-height: 1.5; }
+
+        @media (max-height: 620px) {
+            .carousel-stage { height: 250px; }
+            .song-carousel-card { width: 260px; height: 245px; padding: 14px 16px; }
+            .disc-wrapper { width: 100px; height: 100px; }
+            .disc-glow-ring { width: 108px; height: 108px; }
+            .disc-vinyl { width: 96px; height: 96px; }
+            .card-song-title { font-size: 18px; }
+        }
     </style>
 </head>
 
@@ -482,7 +675,7 @@
         <div id="menu-screen" class="screen active">
             <div class="main-app-tabs">
                 <button class="app-tab-btn tab-rhythm active" id="tab-btn-rhythm" onclick="switchMainTab('rhythm')">🎵 藍循節奏大師</button>
-                <button class="app-tab-btn tab-pianist" id="tab-btn-pianist" onclick="switchMainTab('pianist')">🎹 藍循演奏家</button>
+                <button class="app-tab-btn tab-pianist" id="tab-btn-pianist" onclick="switchMainTab('pianist')">🎹 藍循演奏家(測試版)</button>
             </div>
 
             <!-- 分頁 1：藍循節奏大師 -->
@@ -554,74 +747,99 @@
                 </div>
             </div>
 
-            <!-- 分頁 2：藍循演奏家 -->
+            <!-- ==========================================
+                 分頁 2：藍循演奏家(測試版) (高清光碟卡片輪播選曲介面)
+                 ========================================== -->
             <div id="tab-view-pianist" class="tab-view-container">
-                <div class="screen-header">
-                    <h1 class="pianist-title">藍循演奏家（測試版）</h1>
-                    <p class="subtitle">鋼琴模擬演奏遊戲 — 連續擊出 Charming 觸發狂熱特效與最高 2.0 倍分數加成！</p>
+                <div class="screen-header" style="margin-bottom: 2px;">
+                    <h1 class="pianist-title">藍循演奏家(測試版)</h1>
+                    <p class="subtitle" style="margin-bottom: 2px;">模擬鋼琴演奏，感受演奏樂曲的樂趣。</p>
                 </div>
-                <div class="main-content-area">
-                    <div class="control-panel pianist-panel">
-                        <div class="song-preview-card">
-                            <div class="song-preview-left">
-                                <div class="song-disc"></div>
-                                <div>
-                                    <div class="song-meta-title" id="pianist-card-title">藍循三十周年校慶主題曲</div>
-                                    <div class="song-meta-sub" id="pianist-card-sub">《以愛育才三十載》</div>
-                                </div>
-                            </div>
-                            <div class="song-badge" id="pianist-card-badge">Lv. 5 | 75 BPM</div>
+
+                <div class="main-content-area" style="justify-content: space-evenly;">
+                    <!-- 中央唱片卡片輪播舞台 -->
+                    <div class="carousel-stage" id="pianist-carousel-stage">
+                        <button class="carousel-nav-btn prev-btn" onclick="changePianistSong(-1)" title="上一首">❮</button>
+                        <div class="carousel-track" id="pianist-carousel-track">
+                            <!-- 由 JavaScript 動態渲染光碟卡片 -->
                         </div>
-                        <div class="control-group">
-                            <label>選擇演奏曲目</label>
-                            <select id="pianist-song-select" onchange="updatePianistSongInfo()"></select>
-                        </div>
-                        <div class="control-group">
-                            <label>音符下落速度 (NOTE SPEED)</label>
-                            <select id="pianist-speed-select">
-                                <option value="2.6">慢速 Slow (2.6秒)</option>
-                                <option value="2.0" selected>標準 Normal (2.0秒)</option>
-                                <option value="1.5">快速 Fast (1.5秒)</option>
-                                <option value="1.1">極速 Master (1.1秒)</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label>旋律琴鍵音 (KEY SOUND)</label>
-                            <select id="pianist-keysound-select">
-                                <option value="on" selected>開啟擬真鋼琴音 + Reverb (推薦)</option>
-                                <option value="off">關閉琴鍵音 (僅播背景 MP3)</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label>跨裝置音畫同步微調 (OFFSET)</label>
-                            <select id="pianist-offset-select" onchange="saveUserAudioOffset()">
-                                <option value="-0.15">-150ms (音符極早出現)</option>
-                                <option value="-0.10">-100ms (音符提早出現)</option>
-                                <option value="-0.06">-60ms (音符微早出現)</option>
-                                <option value="-0.03">-30ms (音符略早出現)</option>
-                                <option value="0" selected>0ms (預設硬體自動對齊)</option>
-                                <option value="0.03">+30ms (音符略晚出現)</option>
-                                <option value="0.06">+60ms (音符微晚出現)</option>
-                                <option value="0.10">+100ms (音符延後出現)</option>
-                                <option value="0.15">+150ms (藍牙耳機補償)</option>
-                            </select>
-                        </div>
-                        <div class="mode-description" style="border-color: rgba(251, 191, 36, 0.25);">
-                            <div style="color: var(--pianist-gold); font-weight: bold; margin-bottom: 3px;">
-                                🎹 嚴謹五級判定：Charming (±42ms) / Great / Good / Poor / Miss
-                            </div>
-                            <div style="font-size: 12px; color: #cbd5e1;">
-                                已啟用「硬體音訊鎖定同步引擎」與「平台鋼琴 Reverb 共鳴音色」，音符位置100%跟隨音樂播放進度！
-                            </div>
+                        <button class="carousel-nav-btn next-btn" onclick="changePianistSong(1)" title="下一首">❯</button>
+                    </div>
+
+                    <!-- 輪播進度圓點 & 當前設定狀態預覽列 -->
+                    <div class="carousel-bottom-bar">
+                        <div class="carousel-dots" id="pianist-carousel-dots"></div>
+                        <div class="pianist-status-strip" onclick="openPianistSettings()" title="點擊開啟演奏設定">
+                            <span class="status-pill-item">⚡ 流速: <b id="status-speed-txt">標準 2.0s</b></span>
+                            <span style="color:rgba(255,255,255,0.2);">|</span>
+                            <span class="status-pill-item">🎹 琴音: <b id="status-keysound-txt">開啟</b></span>
+                            <span style="color:rgba(255,255,255,0.2);">|</span>
+                            <span class="status-pill-item">⏱️ 同步: <b id="status-offset-txt">0ms</b></span>
                         </div>
                     </div>
                 </div>
+
                 <div class="screen-footer">
                     <div class="btn-group">
                         <button class="btn btn-secondary" onclick="openLeaderboardMenuForPianist()">🏆 演奏家名人堂</button>
-                        <button class="btn btn-start btn-pianist-start" onclick="startPianistGame()">開始演奏</button>
+                        <button class="btn btn-start btn-pianist-start" onclick="startPianistGame()">▶ 開始演奏</button>
+                        <button class="btn btn-secondary btn-gold" onclick="openPianistSettings()">⚙️ 演奏設定</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             藍循演奏家(測試版)：獨立「演奏設定」彈出視窗
+             ========================================== -->
+        <div id="pianist-settings-overlay" class="screen" style="z-index: 95;">
+            <div class="settings-card">
+                <div class="settings-title">⚙️ 藍循演奏家(測試版)設定</div>
+                
+                <div class="settings-group">
+                    <label>音符下落速度 (NOTE SPEED)</label>
+                    <select id="pianist-speed-select" onchange="updatePianistSettingsSummary()">
+                        <option value="2.6">慢速 Slow (2.6秒)</option>
+                        <option value="2.0" selected>標準 Normal (2.0秒)</option>
+                        <option value="1.5">快速 Fast (1.5秒)</option>
+                        <option value="1.1">極速 Master (1.1秒)</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>旋律琴鍵音 (MELODY KEY SOUND)</label>
+                    <select id="pianist-keysound-select" onchange="updatePianistSettingsSummary()">
+                        <option value="on" selected>開啟擬真鋼琴音 + Reverb (推薦)</option>
+                        <option value="off">關閉琴鍵音 (僅播背景 MP3)</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>跨裝置音畫同步微調 (AUDIO OFFSET)</label>
+                    <select id="pianist-offset-select" onchange="saveUserAudioOffset(); updatePianistSettingsSummary();">
+                        <option value="-0.15">-150ms (音符極早出現)</option>
+                        <option value="-0.10">-100ms (音符提早出現)</option>
+                        <option value="-0.06">-60ms (音符微早出現)</option>
+                        <option value="-0.03">-30ms (音符略早出現)</option>
+                        <option value="0" selected>0ms (預設硬體自動對齊)</option>
+                        <option value="0.03">+30ms (音符略晚出現)</option>
+                        <option value="0.06">+60ms (音符微晚出現)</option>
+                        <option value="0.10">+100ms (音符延後出現)</option>
+                        <option value="0.15">+150ms (藍牙耳機補償)</option>
+                    </select>
+                </div>
+
+                <div class="mode-description" style="border-color: rgba(251, 191, 36, 0.25); margin-top: 12px; margin-bottom: 18px;">
+                    <div style="color: var(--pianist-gold); font-weight: bold; margin-bottom: 4px;">
+                        🎹 操作方式：多點觸控點擊 6 軌 或 鍵盤 S、D、F、J、K、L
+                    </div>
+                    <div style="font-size: 12px; color: #cbd5e1;">
+                        五級嚴謹判定：Charming (±42ms) / Great / Good / Poor / Miss。<br>
+                        如使用外接喇叭或藍牙耳機可調整上方同步微調。
+                    </div>
+                </div>
+
+                <button class="btn btn-start btn-pianist-start" style="width: 100%; padding: 12px;" onclick="closePianistSettings()">儲存並返回選曲</button>
             </div>
         </div>
 
@@ -654,7 +872,7 @@
                         <button class="mode-tab" id="menu-lb-vanishing-survival" onclick="switchLBMode('vanishing-survival')">消存</button>
                         <button class="mode-tab" id="menu-lb-progressive" onclick="switchLBMode('progressive')">漸進</button>
                         <button class="mode-tab" id="menu-lb-season1" onclick="switchLBMode('season1')">賽季1</button>
-                        <button class="mode-tab" id="menu-lb-pianist" onclick="switchLBMode('pianist')">🎹 演奏家</button>
+                        <button class="mode-tab" id="menu-lb-pianist" onclick="switchLBMode('pianist')">🎹 演奏家(測試版)</button>
                     </div>
                 </div>
             </div>
@@ -743,7 +961,6 @@
     <script>
         // ============================================================================
         // ⏱️ 【跨裝置高精準音畫同步時鐘引擎 SongClock】
-        // 支援音檔結束後繼續推進時鐘，確保最後一個音符結束後能順利觸發淡出與結算
         // ============================================================================
         const SongClock = {
             audioEl: null,
@@ -834,7 +1051,7 @@
             }
         };
 
-        // 統一處理「最後一個音符後淡出音樂 3 秒並進入結算畫面」(相容 iOS / iPad 唯讀 volume 限制)
+        // 統一處理「最後一個音符後淡出音樂 3 秒並進入結算畫面」
         function trigger3SecFadeOutAndEnd(sessionObj, audioEl) {
             if (!sessionObj || sessionObj.ending) return;
             sessionObj.ending = true;
@@ -946,14 +1163,21 @@
         `;
 
         // ============================================================================
-        // 🎹 【藍循演奏家】樂曲庫、譜面與旋律音高編輯區 (Offset 統一為 1.42) 🎹
+        // 🎹 【藍循演奏家(測試版)】樂曲庫、譜面與旋律音高編輯區 🎹
+        // 共 3 首樂曲：1. 30.mp3 | 2. dance.mp3 (藍循活力操) | 3. school_anthem.mp3
         // ============================================================================
         const PIANIST_SONGS = [
+            // ------------------------------------------------------------------------
+            // 第 1 首：藍循三十周年校慶主題曲 (30.mp3)
+            // ------------------------------------------------------------------------
             {
                 id: 'song_30',
                 title: '藍循三十周年校慶主題曲',
-                artist: '《以愛育才三十載》',
                 level: 'Lv. 5',
+                icon: '👑',
+                accent: '#fbbf24',
+                accentDark: '#d97706',
+                glow: 'rgba(251, 191, 36, 0.42)',
                 audioSrc: 'https://ltmps-chusiuhin.github.io/rhythm-game/30.mp3',
                 bpm: 75,
                 startDelay: 1.0,
@@ -997,6 +1221,120 @@
                     3 . 4 . . . . .   4 . 6 . 5 5 . .
                     4 . 3 . . 2 . .   1 . 2 . . . . .
                 `
+            },
+
+            // ------------------------------------------------------------------------
+            // 第 2 首：藍循活力操 (dance.mp3)
+            // ------------------------------------------------------------------------
+            {
+                id: 'song_dance',
+                title: '藍循活力操',
+                level: 'Lv. 4',
+                icon: '⚡',
+                accent: '#22d3ee',
+                accentDark: '#0284c7',
+                glow: 'rgba(34, 211, 238, 0.42)',
+                audioSrc: 'https://ltmps-chusiuhin.github.io/rhythm-game/dance.mp3',
+                bpm: 68.7,
+                startDelay: 1.0,
+                chartOffset: 4.50,
+                defaultLanePitches: ['C4', 'D4', 'E4', 'G4', 'A4', 'C5'],
+                melody: `
+                    E5 E5 D5 B4 D5 G5 C5 E5 D5 G5 A5 G5 F#5
+                    B5 B5 B5 B5 G5 D5 G5 F#5 D5 B4
+                    B5 B5 B5 B5 G5 D5 G5 F#5 D5 B4
+                    D5 G5 F#5 D5 B4
+                    D5 G5 F#5 D5 B4
+                    D5 G5 F#5 D5 B4
+                    B5 B5 B5 B5 G5 D5 G5 F#5 D5 B4
+                    E5 E5 E5 D5 B4 D5 G5 C5 E5 D5 G5 A5 G5 F#5
+                    B5 B5 B5 B5 G5 D5 G5 F#5 D5 B4
+                    B5 B5 B5 B5 G5 D5 G5 F#5 D5 B4
+                    B5 B5 C6 G5 D5 G5 A5 A5
+                    B5 B5 C6 G5 D5 G5 A5 A5
+
+                `,
+                customNotes: [],
+                chart: `
+                    // === 前奏 Intro (每行 16 個十六分音符 = 1 小節) ===
+                    4 . . . . . 4 3   . . . . . . 1 3
+                    6 . . . . 3 5 4   . . 5 . 6 5 4 .
+                    6 . 6 . 6 6 . 4   . 2 . 4 3 2 1 .
+                    6 . 6 . 6 6 . 4   . 2 . 4 3 2 1 .
+                    . . . . . . . .  . 2 . 4 3 2 1 .
+                    . . . . . . . .  . 2 . 4 3 2 1 .
+                    . . . . . . . .  . 2 . 4 3 2 1 .
+                    6 . 6 . 6 6 . 4   . 2 . 4 3 2 1 .
+
+                    // === 主歌 Verse (輕快單音與雙音切分) ===
+                    4 4 . . . . 4 3   . . . . . . 1 3
+                    6 . . . . 3 5 4   . . 5 . 6 5 4 .
+                    6 . 6 . 6 6 . 4   . 2 . 4 3 2 1 .
+                    6 . 6 . 6 6 . 4   . 2 . 4 3 2 1 .
+                    . 5 . 5 . 6 . 4   . 2 . 4 . 5 . 5
+                    . 5 . 5 . 6 . 4   . 2 . 4 . 5 . 5
+
+                    // === 副歌 Chorus (雙手和弦與連續音階) ===
+                    
+                `
+            },
+
+            // ------------------------------------------------------------------------
+            // 第 3 首：藍田循道衞理小學校歌 (school_anthem.mp3)
+            // ------------------------------------------------------------------------
+            {
+                id: 'song_school_anthem',
+                title: '藍田循道衞理小學校歌',
+                level: 'Lv. 2',
+                icon: '🏫',
+                accent: '#c084fc',
+                accentDark: '#7e22ce',
+                glow: 'rgba(192, 132, 252, 0.42)',
+                audioSrc: 'https://ltmps-chusiuhin.github.io/rhythm-game/school_anthem.mp3',
+                bpm: 90,
+                startDelay: 2.0,
+                chartOffset: 0.3,
+                defaultLanePitches: ['C4', 'D4', 'E4', 'G4', 'A4', 'C5'],
+                melody: `
+                    G5 F#5 E5 E5 F#5 E5 F#5 G5 A5
+                    C#5 D5 E5 F#5 D5
+                    F#5 G5 A5 A5 D5 E5 F#5 F#5
+                    E5 F#5 G5 E5 B5 B5 A5 F#5 A5
+                    A5 A5 D6 D6 C#6 B5 A5 F#5 B5
+                    E5 F#5 B5 A5 F#5 F#5 E5 D5 
+                    D5 D5 B5 B5 D6 D6 A5 A5
+                    G5 F#5 E5 B5 F#5 E5 D5 E5 F#5
+                    D5 D5 B5 B5 C#6 B5 D6 A5
+                    G5 F#5 E5 E5 F#5 E5 F#5 G5 A5
+                    C#5 D5 E5 F#5 D5
+                `,
+                customNotes: [],
+                chart: `
+                    // === 前奏 Intro (莊重穩定的四分/八分拍點) ===
+                    4 . . . . . 3 .   2 . . . 2 . . .
+                    3 . 2 . 3 . 4 .   5 . . . . . . .
+                    2 . . . . . 3 .   4 . . . 5 . . .
+                    3 . . . . . . .   . . . . . . . .
+                    2 . 3 . 4 . . .   4 . . . . . . .
+                    1 . 2 . 3 . . .   3 . . . . . . .
+                    2 . . . . . 3 .   4 . . . 2 . . .
+                    5 . 5 . 4 . 2 .   4 . . . . . . .
+                    4 . . . . . 4 .   6 . . . 6 . . .
+                    5 . 4 . 3 . 1 .   4 . . . . . . .
+                    1 . . . . . 2 .   5 . . . 4 . . .
+                    3 . 3 . 2 . . .   1 . . . . . . .
+                    1 . 1 . 4 . . .   4 . . . . . . .   
+                    6 . 6 . 4 . . .   4 . . . . . . .
+                    3 . 2 . 1 . . .   5 . . . . . . .
+                    4 . 3 . 2 . 3 .   4 . . . . . . .
+                    1 . 1 . 4 . . .   4 . . . . . . . 
+                    5 . 4 . 6 . . .   3 . . . . . . .
+                    4 . . . . . 3 .   2 . . . 2 . . .
+                    3 . 2 . 3 . 4 .   5 . . . . . . .
+                    2 . . . . . 3 .   4 . . . 5 . . .
+                    3 . . . . . . .   
+
+                `
             }
         ];
 
@@ -1034,11 +1372,14 @@
         let googleUserInfo = null;
         let tokenClient;
         let activeMainTab = 'rhythm';
-        let activeGameType = 'rhythm'; 
+        let activeGameType = 'rhythm';
+        let selectedPianistSongIdx = 0;
+        let isPianistUnlocked = false; // 紀錄「藍循演奏家(測試版)」是否已通過密碼 music124 驗證
 
         window.onload = function () {
-            initPianistSongSelect();
             loadUserAudioOffset();
+            initPianistCarousel();
+            updatePianistSettingsSummary();
             if (window.google) {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: '573911894747-0c28hfr0bmkjnn8pkm2msg6sjal1thqe.apps.googleusercontent.com',
@@ -1062,7 +1403,17 @@
             }
         };
 
+        // 切換主頁面分頁（進入「藍循演奏家(測試版)」需驗證密碼 music124）
         function switchMainTab(tabName) {
+            if (tabName === 'pianist' && !isPianistUnlocked) {
+                const pwd = prompt("請輸入「藍循演奏家(測試版)」測試密碼：");
+                if (pwd === "music124") {
+                    isPianistUnlocked = true;
+                } else {
+                    if (pwd !== null) alert("密碼錯誤！無法進入「藍循演奏家(測試版)」。");
+                    return;
+                }
+            }
             activeMainTab = tabName;
             document.getElementById('tab-btn-rhythm').classList.toggle('active', tabName === 'rhythm');
             document.getElementById('tab-btn-pianist').classList.toggle('active', tabName === 'pianist');
@@ -1070,26 +1421,136 @@
             document.getElementById('tab-view-pianist').classList.toggle('active', tabName === 'pianist');
         }
 
-        function initPianistSongSelect() {
-            const selectEl = document.getElementById('pianist-song-select');
-            if (!selectEl) return;
-            selectEl.innerHTML = '';
+        // ============================================================================
+        // 💿 藍循演奏家(測試版)：高清唱片卡片輪播選曲介面 & 設定視窗邏輯
+        // ============================================================================
+        function initPianistCarousel() {
+            const track = document.getElementById('pianist-carousel-track');
+            const dots = document.getElementById('pianist-carousel-dots');
+            if (!track || !dots) return;
+
+            track.innerHTML = '';
+            dots.innerHTML = '';
+
             PIANIST_SONGS.forEach((song, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.innerText = `${idx + 1}. ${song.title} (${song.level})`;
-                selectEl.appendChild(opt);
+                const noteCount = buildPianistChart(song).length;
+
+                const card = document.createElement('div');
+                card.className = 'song-carousel-card';
+                card.id = `pianist-card-${idx}`;
+                card.style.setProperty('--card-accent', song.accent || '#fbbf24');
+                card.style.setProperty('--card-accent-dark', song.accentDark || '#d97706');
+                card.style.setProperty('--card-glow', song.glow || 'rgba(251, 191, 36, 0.4)');
+
+                card.onclick = () => {
+                    if (selectedPianistSongIdx !== idx) {
+                        selectPianistSong(idx);
+                    }
+                };
+
+                card.innerHTML = `
+                    <div class="card-track-num">TRACK 0${idx + 1}</div>
+                    <div class="card-level-pill">${song.level}</div>
+                    <div class="disc-wrapper">
+                        <div class="disc-glow-ring"></div>
+                        <div class="disc-vinyl">
+                            <span class="disc-center-icon">${song.icon || '🎵'}</span>
+                        </div>
+                    </div>
+                    <div class="card-info-box">
+                        <div class="card-song-title">${song.title}</div>
+                    </div>
+                    <div class="card-meta-footer">
+                        <span class="card-meta-tag">🥁 ${song.bpm} BPM</span>
+                        <span class="card-meta-tag">🎹 ${noteCount} NOTES</span>
+                    </div>
+                `;
+                track.appendChild(card);
+
+                const dot = document.createElement('div');
+                dot.className = 'carousel-dot';
+                dot.id = `pianist-dot-${idx}`;
+                dot.onclick = () => selectPianistSong(idx);
+                dots.appendChild(dot);
             });
-            updatePianistSongInfo();
+
+            // 支援觸控左右滑動選曲 (Swipe)
+            const stage = document.getElementById('pianist-carousel-stage');
+            let touchStartX = 0;
+            if (stage) {
+                stage.addEventListener('touchstart', e => {
+                    if (e.touches.length === 1) touchStartX = e.touches[0].clientX;
+                }, { passive: true });
+                stage.addEventListener('touchend', e => {
+                    if (e.changedTouches.length === 1) {
+                        const dx = e.changedTouches[0].clientX - touchStartX;
+                        if (dx > 45) changePianistSong(-1);
+                        else if (dx < -45) changePianistSong(1);
+                    }
+                }, { passive: true });
+            }
+
+            updatePianistCarouselUI();
         }
 
-        function updatePianistSongInfo() {
-            const selectEl = document.getElementById('pianist-song-select');
-            if (!selectEl) return;
-            const song = PIANIST_SONGS[parseInt(selectEl.value, 10)] || PIANIST_SONGS[0];
-            document.getElementById('pianist-card-title').innerText = song.title;
-            document.getElementById('pianist-card-sub').innerText = song.artist;
-            document.getElementById('pianist-card-badge').innerText = `${song.level} | ${song.bpm} BPM`;
+        function changePianistSong(dir) {
+            const total = PIANIST_SONGS.length;
+            selectedPianistSongIdx = (selectedPianistSongIdx + dir + total) % total;
+            AudioEngine.init();
+            AudioEngine.play('metro');
+            updatePianistCarouselUI();
+        }
+
+        function selectPianistSong(idx) {
+            selectedPianistSongIdx = idx;
+            AudioEngine.init();
+            AudioEngine.play('metro');
+            updatePianistCarouselUI();
+        }
+
+        function updatePianistCarouselUI() {
+            const total = PIANIST_SONGS.length;
+            PIANIST_SONGS.forEach((_, idx) => {
+                const card = document.getElementById(`pianist-card-${idx}`);
+                const dot = document.getElementById(`pianist-dot-${idx}`);
+                if (!card) return;
+                card.classList.remove('active', 'prev', 'next', 'hidden');
+                if (idx === selectedPianistSongIdx) {
+                    card.classList.add('active');
+                } else if (idx === (selectedPianistSongIdx - 1 + total) % total) {
+                    card.classList.add('prev');
+                } else if (idx === (selectedPianistSongIdx + 1) % total) {
+                    card.classList.add('next');
+                } else {
+                    card.classList.add('hidden');
+                }
+                if (dot) dot.classList.toggle('active', idx === selectedPianistSongIdx);
+            });
+        }
+
+        function openPianistSettings() {
+            document.getElementById('pianist-settings-overlay').classList.add('active');
+        }
+
+        function closePianistSettings() {
+            document.getElementById('pianist-settings-overlay').classList.remove('active');
+            updatePianistSettingsSummary();
+        }
+
+        function updatePianistSettingsSummary() {
+            const speedVal = document.getElementById('pianist-speed-select').value;
+            const speedMap = { '2.6': '慢速 2.6s', '2.0': '標準 2.0s', '1.5': '快速 1.5s', '1.1': '極速 1.1s' };
+            const ksVal = document.getElementById('pianist-keysound-select').value;
+            const offsetVal = parseFloat(document.getElementById('pianist-offset-select').value) || 0;
+            const offsetMs = Math.round(offsetVal * 1000);
+
+            const spEl = document.getElementById('status-speed-txt');
+            const ksEl = document.getElementById('status-keysound-txt');
+            const ofEl = document.getElementById('status-offset-txt');
+
+            if (spEl) spEl.innerText = speedMap[speedVal] || `${speedVal}s`;
+            if (ksEl) ksEl.innerText = ksVal === 'on' ? '開啟' : '關閉';
+            if (ofEl) ofEl.innerText = (offsetMs > 0 ? `+${offsetMs}ms` : `${offsetMs}ms`);
         }
 
         function openLeaderboardMenuForPianist() {
@@ -1218,6 +1679,7 @@
             document.getElementById('mascot-right').classList.remove('visible');
             const pauseBtn = document.getElementById('btn-pause');
             pauseBtn.style.display = 'none';
+            pauseBtn.classList.remove('pianist-pos');
             showMenu();
         }
 
@@ -1234,7 +1696,7 @@
             if (config.mode === 'season1') mColor = 'var(--comp-gold)';
             if (el) el.innerHTML = `<div><span style="color:${pColor}; font-weight:bold;">[${config.players}P]</span> ${pText}</div><div style="margin-top:3px;"><span style="color:${mColor}; font-weight:bold;">[${getModeName(config.mode)}]</span> ${mText}</div>`;
         }
-        function getModeName(m) { const names = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1', 'pianist':'演奏家'}; return names[m] || m; }
+        function getModeName(m) { const names = {'fixed':'練習', 'vanishing':'消失', 'survival':'生存', 'vanishing-survival':'消存', 'progressive':'漸進', 'season1':'賽季1', 'pianist':'演奏家(測試版)'}; return names[m] || m; }
         function setUploadRole(role) { uploadRole = role; document.getElementById('role-student').classList.toggle('active', role === 'student'); document.getElementById('role-guest').classList.toggle('active', role === 'guest'); document.getElementById('input-student-row').style.display = role === 'student' ? 'flex' : 'none'; document.getElementById('input-guest-row').style.display = role === 'guest' ? 'flex' : 'none'; }
         function switchLBCategory(cat) { currentLB.category = cat; document.querySelectorAll('#lb-category-tabs .cat-btn').forEach(b => b.classList.remove('active')); document.getElementById(`cat-${cat}`).classList.add('active'); const filters = document.getElementById('lb-filters'); const fGrade = document.getElementById('filter-grade'); const fClass = document.getElementById('filter-class'); if(cat === 'class') { filters.style.display = 'flex'; fGrade.style.display = 'block'; fClass.style.display = 'block'; } else if (cat === 'grade') { filters.style.display = 'flex'; fGrade.style.display = 'block'; fClass.style.display = 'none'; } else { filters.style.display = 'none'; } refreshLB(); }
         function switchLBMode(m) { currentLB.mode = m; document.querySelectorAll('#lb-mode-tabs .mode-tab').forEach(b => b.classList.remove('active')); const tabEl = document.getElementById(`menu-lb-${m}`); if (tabEl) tabEl.classList.add('active'); refreshLB(); }
@@ -1648,6 +2110,7 @@
             document.getElementById('ui-layer').style.display = 'flex';
             const pauseBtn = document.getElementById('btn-pause');
             pauseBtn.style.display = 'block';
+            pauseBtn.classList.remove('pianist-pos');
             updateHUD(); gameState = 'PLAYING'; timeouts.forEach(clearTimeout); timeouts = []; if (animId) cancelAnimationFrame(animId);
             if (config.mode === 'season1') startSeason1Mode(); else schedule();
             render();
@@ -1684,7 +2147,6 @@
                 }
             }
             notify("準備開始", "var(--comp-gold)");
-            // 最後一顆音符的時間點
             session.lastNoteTargetTime = lastNoteTarget > 0 ? lastNoteTarget : 5;
             session.ending = false;
         }
@@ -1809,7 +2271,6 @@
                 if (rating === 'PERFECT' || rating === 'GOOD') VFX.bursts.push({ y: y, color: rating === 'PERFECT' ? '#22d3ee' : '#4ade80', life: 1.0 });
                 handleResult(pid, rating); showFeedback(rating, HIT_X, y - 90, rCol);
 
-                // 如果剛剛擊中的是最後一顆未判定音符，立即啟動 3 秒淡出結算
                 if (config.mode === 'season1' && !session.ending && session.p1.notes.every(n => n.hit || n.missed)) {
                     trigger3SecFadeOutAndEnd(session, document.getElementById('bgm-season1'));
                 }
@@ -1837,14 +2298,15 @@
             document.getElementById('game-wrapper').appendChild(el); setTimeout(() => el.remove(), 600);
         }
 
-        function showCharmingStreakBanner(streak, multText) {
+        // 縮小版連續 Charming 提示，不顯示倍率且不干擾視線
+        function showCharmingStreakBanner(streak) {
             const el = document.createElement('div');
             el.className = 'charming-streak-popup';
-            el.innerText = `✨ ${streak} CHARMING STREAK! (${multText})`;
+            el.innerText = `✨ ${streak} CHARMING STREAK`;
             el.style.left = (width / 2) + 'px';
-            el.style.top = (PIANIST_GEOM.TOP_Y + 95) + 'px';
+            el.style.top = (PIANIST_GEOM.TOP_Y + 45) + 'px';
             document.getElementById('game-wrapper').appendChild(el);
-            setTimeout(() => el.remove(), 850);
+            setTimeout(() => el.remove(), 650);
         }
 
         function loseLife(pid) {
@@ -1868,11 +2330,8 @@
                 document.getElementById('p1-score').innerText = pianistSession.score;
                 let streakHtml = '';
                 const cStreak = pianistSession.charmingStreak || 0;
-                const mult = getPianistCharmingMultiplier(cStreak);
                 if (cStreak >= 5) {
-                    streakHtml = `<span class="charming-badge">✨ CHARMING x${cStreak} (${mult.toFixed(1)}x)</span>`;
-                } else if (cStreak >= 2) {
-                    streakHtml = `<span style="color:#fef08a; font-size:13px;">CHARMING x${cStreak}</span>`;
+                    streakHtml = `<span class="charming-badge">✨ CHARMING x${cStreak}</span>`;
                 }
                 document.getElementById('p1-lives').innerHTML = `${streakHtml}<span style="color:var(--pianist-gold); font-size:16px;">COMBO ${pianistSession.combo}</span>`;
                 document.getElementById('round-info').innerText = `🎹 ${pianistSession.song.title}`;
@@ -1886,9 +2345,9 @@
             document.getElementById('round-info').innerText = rTxt;
         }
         function renderHearts(elementId, count) { const container = document.getElementById(elementId); let html = ''; for (let i = 0; i < Math.max(0, count); i++) html += '<span class="heart">❤</span>'; container.innerHTML = html; }
-        function showFeedback(text, x, y, color, subText = '') {
+        function showFeedback(text, x, y, color) {
             const el = document.createElement('div'); el.className = 'hit-popup';
-            el.innerHTML = subText ? `${text}<span class="hit-sub-bonus">${subText}</span>` : text;
+            el.innerText = text;
             el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = color;
             document.getElementById('game-wrapper').appendChild(el); setTimeout(() => el.remove(), 500);
         }
@@ -1908,13 +2367,15 @@
             document.getElementById('season1-slogan-bottom').classList.remove('visible');
             document.getElementById('mascot-left').classList.remove('visible');
             document.getElementById('mascot-right').classList.remove('visible');
-            const pauseBtn = document.getElementById('btn-pause'); pauseBtn.style.display = 'none';
+            const pauseBtn = document.getElementById('btn-pause');
+            pauseBtn.style.display = 'none';
+            pauseBtn.classList.remove('pianist-pos');
 
             const scrollContainer = document.getElementById('result-scroll-container');
             const container = document.getElementById('result-content'); container.innerHTML = '';
             if (activeGameType === 'pianist') {
                 document.getElementById('result-screen-title').innerText = '演奏完成';
-                document.getElementById('res-mode').innerText = '藍循演奏家';
+                document.getElementById('res-mode').innerText = '藍循演奏家(測試版)';
                 document.getElementById('res-len').innerText = '6 軌';
                 document.getElementById('res-diff').innerText = pianistSession.song.title;
                 scrollContainer.classList.add('single-mode-layout'); container.className = 'result-flex single-layout';
@@ -1981,7 +2442,7 @@
         }
 
         // ============================================================================
-        // 🎹 【藍循演奏家】Deemo 風格 3D 透視 6 軌鋼琴遊戲核心引擎 🎹
+        // 🎹 【藍循演奏家(測試版)】Deemo 風格 3D 透視 6 軌鋼琴遊戲核心引擎 🎹
         // ============================================================================
         const PIANIST_GEOM = {
             LANES: 6,          
@@ -2096,11 +2557,19 @@
         }
 
         async function startPianistGame() {
+            if (!isPianistUnlocked) {
+                const pwd = prompt("請輸入「藍循演奏家(測試版)」測試密碼：");
+                if (pwd === "music124") {
+                    isPianistUnlocked = true;
+                } else {
+                    if (pwd !== null) alert("密碼錯誤！");
+                    return;
+                }
+            }
             activeGameType = 'pianist';
             if (document.activeElement) document.activeElement.blur();
             AudioEngine.init(); VFX.init();
-            const songIdx = parseInt(document.getElementById('pianist-song-select').value, 10) || 0;
-            const selectedSong = PIANIST_SONGS[songIdx] || PIANIST_SONGS[0];
+            const selectedSong = PIANIST_SONGS[selectedPianistSongIdx] || PIANIST_SONGS[0];
             const flightTime = parseFloat(document.getElementById('pianist-speed-select').value) || 2.0;
             const keySound = document.getElementById('pianist-keysound-select').value === 'on';
             const pBgm = document.getElementById('bgmPlayer');
@@ -2131,6 +2600,7 @@
             document.getElementById('ui-layer').style.display = 'flex';
             const pauseBtn = document.getElementById('btn-pause');
             pauseBtn.style.display = 'block';
+            pauseBtn.classList.add('pianist-pos'); // 將返回主選單移至右上角 COMBO 下方
 
             updateHUD(); gameState = 'PLAYING'; timeouts.forEach(clearTimeout); timeouts = []; if (animId) cancelAnimationFrame(animId);
             notify("READY", "var(--pianist-gold)");
@@ -2334,7 +2804,6 @@
                 bestNote.hit = true;
                 let rating = '';
                 let rCol = '';
-                let subBonusText = '';
                 let isCharmingHit = false;
 
                 if (minDiff <= PIANIST_WINDOWS.CHARMING) {
@@ -2349,11 +2818,8 @@
                     const mult = getPianistCharmingMultiplier(pianistSession.charmingStreak);
                     const gained = Math.round(100 * mult);
                     pianistSession.score += gained;
-                    if (mult > 1.0) {
-                        subBonusText = `STREAK x${pianistSession.charmingStreak} (+${gained})`;
-                    }
                     if (pianistSession.charmingStreak === 5 || pianistSession.charmingStreak === 15 || pianistSession.charmingStreak === 30 || (pianistSession.charmingStreak >= 10 && pianistSession.charmingStreak % 10 === 0)) {
-                        showCharmingStreakBanner(pianistSession.charmingStreak, `${mult.toFixed(1)}x BONUS`);
+                        showCharmingStreakBanner(pianistSession.charmingStreak);
                     }
                 } else if (minDiff <= PIANIST_WINDOWS.GREAT) {
                     rating = 'GREAT';
@@ -2429,9 +2895,8 @@
                     showCombo(pianistSession.combo, width / 2, PIANIST_GEOM.TOP_Y + 145);
                 }
                 updateHUD();
-                showFeedback(rating, jb.center, PIANIST_GEOM.JUDGE_Y - 55, rCol, subBonusText);
+                showFeedback(rating, jb.center, PIANIST_GEOM.JUDGE_Y - 55, rCol);
 
-                // 如果剛剛擊中的是最後一顆未判定音符，立即啟動 3 秒音樂淡出並進入結算畫面
                 if (!pianistSession.ending && pianistSession.notes.every(n => n.hit || n.missed)) {
                     trigger3SecFadeOutAndEnd(pianistSession, document.getElementById('bgmPlayer'));
                 }
@@ -2452,8 +2917,15 @@
 
         const handleTouch = (zone, e) => { e.preventDefault(); if (config.players === 1) handleInput(1); else handleInput(zone); };
         window.addEventListener('keydown', e => {
+            const code = e.code;
+            // 在主選單且位於「藍循演奏家(測試版)」分頁時，支援鍵盤左右方向鍵切換樂曲唱片
+            if (gameState === 'MENU' && activeMainTab === 'pianist' && !document.getElementById('pianist-settings-overlay').classList.contains('active')) {
+                if (code === 'ArrowLeft') { e.preventDefault(); changePianistSong(-1); return; }
+                if (code === 'ArrowRight') { e.preventDefault(); changePianistSong(1); return; }
+            }
+
             if (gameState !== 'PLAYING') return;
-            const k = e.key.toLowerCase(); const code = e.code;
+            const k = e.key.toLowerCase();
             if (activeGameType === 'pianist') {
                 const keyMap = { 
                     's':0, 'd':1, 'f':2, 'j':3, 'k':4, 'l':5, 
