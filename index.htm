@@ -223,11 +223,29 @@
         @keyframes spinDisc { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes spinDiscReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
 
-        .card-track-num {
-            position: absolute; top: 16px; left: 20px;
-            font-size: 13px; font-weight: 900; letter-spacing: 1.5px;
+        /* 卡片左上角試聽控制膠囊按鈕 */
+        .card-preview-btn {
+            position: absolute; top: 14px; left: 16px;
+            background: rgba(2, 6, 23, 0.85);
+            border: 1.5px solid var(--card-accent, #fbbf24);
             color: var(--card-accent, #fbbf24);
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 12px; font-weight: 900; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 4px;
+            cursor: pointer; z-index: 15; transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
         }
+        .card-preview-btn:hover {
+            background: var(--card-accent, #fbbf24);
+            color: #020617;
+            transform: scale(1.06);
+        }
+        .card-preview-btn.playing {
+            background: rgba(251, 191, 36, 0.2);
+            color: #ffffff;
+            box-shadow: 0 0 12px var(--card-glow, rgba(251,191,36,0.5));
+        }
+
         .card-level-pill {
             position: absolute; top: 14px; right: 18px;
             background: #020617;
@@ -623,6 +641,8 @@
 <body>
     <audio id="bgm-season1" src="https://ltmps-chusiuhin.github.io/rhythm-game/30.mp3" preload="auto" style="display:none;"></audio>
     <audio id="bgmPlayer" preload="auto" style="display:none;"></audio>
+    <!-- 選曲畫面專用循環試聽播放器 -->
+    <audio id="previewPlayer" preload="auto" loop style="display:none;"></audio>
 
     <div class="bg-layer">
         <div class="aurora-container">
@@ -748,7 +768,7 @@
             </div>
 
             <!-- ==========================================
-                 分頁 2：藍循演奏家(測試版) (高清光碟卡片輪播選曲介面)
+                 分頁 2：藍循演奏家(測試版) (高清光碟卡片輪播選曲介面 + 自動試聽)
                  ========================================== -->
             <div id="tab-view-pianist" class="tab-view-container">
                 <div class="screen-header" style="margin-bottom: 2px;">
@@ -967,7 +987,7 @@
         const SEASON1_CUTOFF_MS = new Date('2026-11-01T23:59:59.999+08:00').getTime();
 
         function isBeforeSeason1Cutoff(docData) {
-            if (!docData || !docData.timestamp) return true; // 相容早期無 timestamp 之舊資料
+            if (!docData || !docData.timestamp) return true;
             let tsMs = 0;
             if (typeof docData.timestamp.toMillis === 'function') {
                 tsMs = docData.timestamp.toMillis();
@@ -980,7 +1000,7 @@
         }
 
         // ============================================================================
-        // ⏱️ 【跨裝置高精準音畫同步時鐘引擎 SongClock】
+        // ⏱️ 【跨裝置高精準音畫同步時鐘引擎 SongClock (iPad 防呆強化版)】
         // ============================================================================
         const SongClock = {
             audioEl: null,
@@ -989,7 +1009,7 @@
             pauseStartPerf: 0,
             startedPlaying: false,
             playTriggered: false,
-            lastRawAudioTime: -1,
+            lastRawAudioTime: 0,
             lastAudioPerf: 0,
             userOffset: 0,
 
@@ -1000,7 +1020,7 @@
                 this.pauseStartPerf = 0;
                 this.startedPlaying = false;
                 this.playTriggered = false;
-                this.lastRawAudioTime = -1;
+                this.lastRawAudioTime = 0;
                 this.lastAudioPerf = performance.now();
                 this.userOffset = userOffsetSec;
             },
@@ -1015,13 +1035,19 @@
 
                     if (songTime >= 0 && this.audioEl && !this.playTriggered) {
                         this.playTriggered = true;
-                        this.audioEl.currentTime = 0;
+                        try { this.audioEl.currentTime = 0; } catch (e) {}
+                        this.lastRawAudioTime = 0;
+                        this.lastAudioPerf = performance.now();
+
                         this.audioEl.play().then(() => {
                             this.startedPlaying = true;
-                            this.lastRawAudioTime = this.audioEl.currentTime;
+                            // 防呆：若 iPad 尚未完成 currentTime = 0 的非同步歸零，強制以 0 起算，防止跳到舊秒數
+                            const raw = this.audioEl.currentTime;
+                            this.lastRawAudioTime = (raw > 2.0) ? 0 : raw;
                             this.lastAudioPerf = performance.now();
                         }).catch(e => {
-                            console.log("Audio play error:", e);
+                            console.log("Audio play fallback clock:", e);
+                            // 即使被 iPad 阻擋自動播放，仍以純時鐘穩定推進，絕不暴衝
                             this.startedPlaying = true;
                             this.lastRawAudioTime = 0;
                             this.lastAudioPerf = performance.now();
@@ -1035,25 +1061,28 @@
                 // 階段 2：音樂正式播放階段
                 if (this.audioEl && !this.audioEl.paused && !this.audioEl.ended) {
                     const raw = this.audioEl.currentTime;
-                    if (raw !== this.lastRawAudioTime) {
-                        this.lastRawAudioTime = raw;
-                        this.lastAudioPerf = nowPerf;
+                    // 🛡️ 關鍵防呆：過濾 iPad 非同步 Seek 產生的異常秒數暴衝 (單幀跳躍超過 1.5 秒視為異常殘留值)
+                    if (raw >= 0 && (raw - this.lastRawAudioTime) < 1.5) {
+                        if (raw !== this.lastRawAudioTime) {
+                            this.lastRawAudioTime = raw;
+                            this.lastAudioPerf = nowPerf;
+                        }
                     }
                     const delta = Math.min(0.055, Math.max(0, (nowPerf - this.lastAudioPerf) / 1000));
                     let hwLatency = 0;
                     if (AudioEngine.ctx) {
                         hwLatency = (AudioEngine.ctx.outputLatency || AudioEngine.ctx.baseLatency || 0);
                     }
-                    return Math.max(0, raw + delta - hwLatency) + this.userOffset;
+                    return Math.max(0, this.lastRawAudioTime + delta - hwLatency) + this.userOffset;
                 }
 
-                // 階段 3：當音檔已播完 (ended) 或被系統停止，時鐘繼續根據 performance.now() 往前推進，不會卡死
+                // 階段 3：若音檔暫停、被系統阻擋或已播完，依靠高精度計時器平滑推進
                 if (this.startedPlaying) {
                     const extraElapsed = Math.max(0, (nowPerf - this.lastAudioPerf) / 1000);
-                    return Math.max(0, (this.lastRawAudioTime > 0 ? this.lastRawAudioTime : 0) + extraElapsed) + this.userOffset;
+                    return Math.max(0, this.lastRawAudioTime + extraElapsed) + this.userOffset;
                 }
 
-                return 0 + this.userOffset;
+                return this.userOffset;
             },
 
             onPause() {
@@ -1076,7 +1105,7 @@
             if (!sessionObj || sessionObj.ending) return;
             sessionObj.ending = true;
 
-            const FADE_DURATION_MS = 3000; // 3秒淡出
+            const FADE_DURATION_MS = 3000;
             let elapsedMs = 0;
             let lastTickPerf = performance.now();
 
@@ -1104,7 +1133,6 @@
                     try { audioEl.volume = targetVol; } catch (e) {}
                 }
 
-                // 滿 3 秒立即停止音樂並進入結算畫面
                 if (progress >= 1) {
                     clearInterval(sessionObj.fadeInterval);
                     sessionObj.fadeInterval = null;
@@ -1118,14 +1146,19 @@
             }, 50);
         }
 
+        // 改良版音檔預熱：確保歸零完成，且不破壞 iPad 後續播放狀態
         async function warmupAndResetAudio(audioEl, srcUrl) {
             if (!audioEl) return;
             try {
                 if (srcUrl && audioEl.src !== srcUrl) {
                     audioEl.src = srcUrl;
+                    audioEl.load();
                 }
                 audioEl.volume = 0;
-                await audioEl.play();
+                const playPromise = audioEl.play();
+                if (playPromise !== undefined) {
+                    await playPromise;
+                }
                 audioEl.pause();
                 audioEl.currentTime = 0;
                 audioEl.volume = 1.0;
@@ -1300,7 +1333,7 @@
             },
 
             // ------------------------------------------------------------------------
-            // 第 3 首：藍田循道衞理小學校歌 (school_anthem.mp3)
+            // 第 3 首：藍田循道衞理小學校歌 (school_anthem.mp3) - chartOffset 已改為 0.2
             // ------------------------------------------------------------------------
             {
                 id: 'song_school_anthem',
@@ -1313,7 +1346,7 @@
                 audioSrc: 'https://ltmps-chusiuhin.github.io/rhythm-game/school_anthem.mp3',
                 bpm: 90,
                 startDelay: 2.0,
-                chartOffset: 0.3,
+                chartOffset: 0.2,
                 defaultLanePitches: ['C4', 'D4', 'E4', 'G4', 'A4', 'C5'],
                 melody: `
                     G5 F#5 E5 E5 F#5 E5 F#5 G5 A5
@@ -1396,6 +1429,10 @@
         let selectedPianistSongIdx = 0;
         let isPianistUnlocked = false;
 
+        // 選曲畫面試聽功能控制變數
+        let isPreviewMuted = false;
+        let previewFadeInterval = null;
+
         window.onload = function () {
             loadUserAudioOffset();
             initPianistCarousel();
@@ -1421,7 +1458,103 @@
             }
         };
 
-        // 切換主頁面分頁（進入「藍循演奏家(測試版)」需驗證密碼 music124）
+        // ============================================================================
+        // 🔊 選曲畫面試聽功能 (自動切換試聽 + 柔和漸入 + 靜音開關)
+        // ============================================================================
+        function playSongPreview() {
+            const previewEl = document.getElementById('previewPlayer');
+            if (!previewEl) return;
+            if (previewFadeInterval) {
+                clearInterval(previewFadeInterval);
+                previewFadeInterval = null;
+            }
+
+            if (isPreviewMuted || gameState !== 'MENU' || activeMainTab !== 'pianist') {
+                previewEl.pause();
+                updatePreviewButtonsUI();
+                return;
+            }
+
+            const song = PIANIST_SONGS[selectedPianistSongIdx] || PIANIST_SONGS[0];
+            if (!song || !song.audioSrc) return;
+
+            if (previewEl.src !== song.audioSrc) {
+                previewEl.src = song.audioSrc;
+            }
+            previewEl.currentTime = 0;
+            previewEl.volume = 0.05;
+
+            previewEl.play().then(() => {
+                updatePreviewButtonsUI();
+                let vol = 0.05;
+                previewFadeInterval = setInterval(() => {
+                    if (isPreviewMuted || gameState !== 'MENU' || activeMainTab !== 'pianist' || previewEl.paused) {
+                        clearInterval(previewFadeInterval);
+                        previewFadeInterval = null;
+                        return;
+                    }
+                    vol = Math.min(0.65, vol + 0.06);
+                    try { previewEl.volume = vol; } catch (e) {}
+                    if (vol >= 0.65) {
+                        clearInterval(previewFadeInterval);
+                        previewFadeInterval = null;
+                    }
+                }, 60);
+            }).catch(e => {
+                console.log("Preview play notice:", e);
+                updatePreviewButtonsUI();
+            });
+        }
+
+        function stopSongPreview() {
+            if (previewFadeInterval) {
+                clearInterval(previewFadeInterval);
+                previewFadeInterval = null;
+            }
+            const previewEl = document.getElementById('previewPlayer');
+            if (previewEl) {
+                try {
+                    previewEl.pause();
+                    previewEl.currentTime = 0;
+                } catch (e) {}
+            }
+            updatePreviewButtonsUI();
+        }
+
+        function toggleSongPreview(e) {
+            if (e) e.stopPropagation();
+            const previewEl = document.getElementById('previewPlayer');
+            if (!previewEl) return;
+
+            if (!isPreviewMuted && !previewEl.paused) {
+                isPreviewMuted = true;
+                stopSongPreview();
+            } else {
+                isPreviewMuted = false;
+                playSongPreview();
+            }
+        }
+
+        function updatePreviewButtonsUI() {
+            const previewEl = document.getElementById('previewPlayer');
+            const isPlaying = previewEl && !previewEl.paused && !isPreviewMuted;
+            PIANIST_SONGS.forEach((_, idx) => {
+                const btn = document.getElementById(`preview-btn-${idx}`);
+                if (!btn) return;
+                if (idx === selectedPianistSongIdx && isPlaying) {
+                    btn.innerHTML = '🔊 試聽中';
+                    btn.classList.add('playing');
+                } else if (isPreviewMuted) {
+                    btn.innerHTML = '🔇 已靜音';
+                    btn.classList.remove('playing');
+                } else {
+                    btn.innerHTML = '🔈 試聽';
+                    btn.classList.remove('playing');
+                }
+            });
+        }
+
+        // 切換主頁面分頁（進入「藍循演奏家(測試版)」需驗證密碼 music124，通過後自動開始試聽）
         function switchMainTab(tabName) {
             if (tabName === 'pianist' && !isPianistUnlocked) {
                 const pwd = prompt("請輸入「藍循演奏家(測試版)」測試密碼：");
@@ -1437,6 +1570,12 @@
             document.getElementById('tab-btn-pianist').classList.toggle('active', tabName === 'pianist');
             document.getElementById('tab-view-rhythm').classList.toggle('active', tabName === 'rhythm');
             document.getElementById('tab-view-pianist').classList.toggle('active', tabName === 'pianist');
+
+            if (tabName === 'pianist') {
+                playSongPreview();
+            } else {
+                stopSongPreview();
+            }
         }
 
         // ============================================================================
@@ -1463,11 +1602,13 @@
                 card.onclick = () => {
                     if (selectedPianistSongIdx !== idx) {
                         selectPianistSong(idx);
+                    } else {
+                        toggleSongPreview();
                     }
                 };
 
                 card.innerHTML = `
-                    <div class="card-track-num">TRACK 0${idx + 1}</div>
+                    <button class="card-preview-btn" id="preview-btn-${idx}" onclick="toggleSongPreview(event)" title="點擊開關樂曲試聽">🔈 試聽</button>
                     <div class="card-level-pill">${song.level}</div>
                     <div class="disc-wrapper">
                         <div class="disc-glow-ring"></div>
@@ -1517,6 +1658,7 @@
             AudioEngine.init();
             AudioEngine.play('metro');
             updatePianistCarouselUI();
+            playSongPreview();
         }
 
         function selectPianistSong(idx) {
@@ -1524,6 +1666,7 @@
             AudioEngine.init();
             AudioEngine.play('metro');
             updatePianistCarouselUI();
+            playSongPreview();
         }
 
         function updatePianistCarouselUI() {
@@ -1544,6 +1687,7 @@
                 }
                 if (dot) dot.classList.toggle('active', idx === selectedPianistSongIdx);
             });
+            updatePreviewButtonsUI();
         }
 
         function openPianistSettings() {
@@ -1573,6 +1717,7 @@
 
         function openLeaderboardMenuForPianist() {
             if (isLBLocked) { alert("名人堂目前已上鎖，暫時無法進入！"); return; }
+            stopSongPreview();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('leaderboard-screen').classList.add('active');
             switchLBMode('pianist');
@@ -1644,6 +1789,9 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('menu-screen').classList.add('active');
             updateDescription();
+            if (activeMainTab === 'pianist' && isPianistUnlocked) {
+                playSongPreview();
+            }
         }
 
         function pauseGame() {
@@ -1719,9 +1867,8 @@
         function switchLBCategory(cat) { currentLB.category = cat; document.querySelectorAll('#lb-category-tabs .cat-btn').forEach(b => b.classList.remove('active')); document.getElementById(`cat-${cat}`).classList.add('active'); const filters = document.getElementById('lb-filters'); const fGrade = document.getElementById('filter-grade'); const fClass = document.getElementById('filter-class'); if(cat === 'class') { filters.style.display = 'flex'; fGrade.style.display = 'block'; fClass.style.display = 'block'; } else if (cat === 'grade') { filters.style.display = 'flex'; fGrade.style.display = 'block'; fClass.style.display = 'none'; } else { filters.style.display = 'none'; } refreshLB(); }
         function switchLBMode(m) { currentLB.mode = m; document.querySelectorAll('#lb-mode-tabs .mode-tab').forEach(b => b.classList.remove('active')); const tabEl = document.getElementById(`menu-lb-${m}`); if (tabEl) tabEl.classList.add('active'); refreshLB(); }
         function refreshLB() { currentLB.filterGrade = document.getElementById('filter-grade').value; currentLB.filterClass = document.getElementById('filter-class').value; fetchLeaderboard(currentLB.mode, 'lb-list-menu'); }
-        function openLeaderboardMenu() { if (isLBLocked) { alert("名人堂目前已上鎖，暫時無法進入！"); return; } document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('leaderboard-screen').classList.add('active'); refreshLB(); }
+        function openLeaderboardMenu() { if (isLBLocked) { alert("名人堂目前已上鎖，暫時無法進入！"); return; } stopSongPreview(); document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('leaderboard-screen').classList.add('active'); refreshLB(); }
 
-        // 「校慶」模式改為不需要登入即可直接選擇遊玩
         function setMode(m) {
             setModeInternal(m);
         }
@@ -1820,7 +1967,6 @@
                 const uniqueData = new Map();
                 querySnapshot.forEach(doc => {
                     const d = doc.data();
-                    // 若查詢的是「賽季1」，只計算截至 2026年11月1日 23:59:59 的成績，11月2日之後不計算在內
                     if (mode === 'season1' && !isBeforeSeason1Cutoff(d)) return;
                     const key = d.type === 'student' ? (d.classId + '_' + d.name) : ('guest_' + d.name);
                     if (!uniqueData.has(key) || d.score > uniqueData.get(key).score) uniqueData.set(key, d);
@@ -1848,6 +1994,7 @@
         }
 
         function openCompetitionRanking() {
+            stopSongPreview();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('competition-screen').classList.add('active');
             fetchSeasonLeaderboard();
@@ -1864,7 +2011,6 @@
                 querySnapshot.forEach(doc => {
                     const d = doc.data();
                     if (d.type !== 'student') return;
-                    // 只計算截至 2026年11月1日 23:59:59 的成績，11月2日或之後的成績不計算在內
                     if (!isBeforeSeason1Cutoff(d)) return;
                     const key = d.classId + '_' + d.name;
                     if (!uniqueData.has(key) || d.score > uniqueData.get(key).score) uniqueData.set(key, d);
@@ -2100,6 +2246,7 @@
         }
 
         async function startGame() {
+            stopSongPreview();
             activeGameType = 'rhythm';
             if (document.activeElement) document.activeElement.blur();
             AudioEngine.init(); VFX.init();
@@ -2213,13 +2360,13 @@
                 drawNotes(ctx, session.p2.notes, y2, '#f472b6', now, speed, beatSec, isVanishingP1, 2);
             }
 
-            // 校慶模式：檢查是否已全部彈完最後一個音符，立即啟動 3 秒音樂淡出並進入結算畫面
-            if (config.mode === 'anniversary' && !session.ending) {
+            // 🛡️ 安全結束判定：確保遊戲時間已推進至接近尾聲 (85% 以上)，防止 iPad 開局緩衝異常提早觸發結算
+            if (config.mode === 'anniversary' && !session.ending && session.lastNoteTargetTime > 0) {
                 const bgm = document.getElementById('bgm-season1');
                 const allDone = session.p1.notes.length > 0 && session.p1.notes.every(n => n.hit || n.missed);
-                const timePassed = session.lastNoteTargetTime && now >= (session.lastNoteTargetTime + WINDOWS.MISS);
-                const audioEnded = bgm && bgm.ended;
-                if (allDone || timePassed || audioEnded) {
+                const timePassed = now >= (session.lastNoteTargetTime + WINDOWS.MISS);
+                const safeAudioEnded = bgm && bgm.ended && (now >= session.lastNoteTargetTime * 0.85);
+                if (allDone || timePassed || safeAudioEnded) {
                     trigger3SecFadeOutAndEnd(session, bgm);
                 }
             }
@@ -2322,7 +2469,6 @@
             document.getElementById('game-wrapper').appendChild(el); setTimeout(() => el.remove(), 600);
         }
 
-        // 縮小版連續 Charming 提示，不顯示倍率且不干擾視線
         function showCharmingStreakBanner(streak) {
             const el = document.createElement('div');
             el.className = 'charming-streak-popup';
@@ -2590,6 +2736,7 @@
                     return;
                 }
             }
+            stopSongPreview();
             activeGameType = 'pianist';
             if (document.activeElement) document.activeElement.blur();
             AudioEngine.init(); VFX.init();
@@ -2624,7 +2771,7 @@
             document.getElementById('ui-layer').style.display = 'flex';
             const pauseBtn = document.getElementById('btn-pause');
             pauseBtn.style.display = 'block';
-            pauseBtn.classList.add('pianist-pos'); // 將返回主選單移至右上角 COMBO 下方
+            pauseBtn.classList.add('pianist-pos');
 
             updateHUD(); gameState = 'PLAYING'; timeouts.forEach(clearTimeout); timeouts = []; if (animId) cancelAnimationFrame(animId);
             notify("READY", "var(--pianist-gold)");
@@ -2643,12 +2790,12 @@
             drawPianistNotes(ctx, nowSongTime);
             drawPianistRipples(ctx);
 
-            // 檢查是否所有音符已全部判定完成（或已超過最後一顆音符時間），立即啟動 3 秒音樂淡出並進入結算畫面
-            if (!pianistSession.ending) {
+            // 🛡️ 安全結束判定：確保遊戲時間已推進至接近尾聲 (85% 以上)，防止 iPad 開局緩衝異常提早觸發結算
+            if (!pianistSession.ending && pianistSession.lastNoteTargetTime > 0) {
                 const allDone = pianistSession.notes.length > 0 && pianistSession.notes.every(n => n.hit || n.missed);
-                const timePassed = pianistSession.lastNoteTargetTime && nowSongTime >= (pianistSession.lastNoteTargetTime + PIANIST_WINDOWS.POOR);
-                const audioEnded = pBgm && pBgm.ended;
-                if (allDone || timePassed || audioEnded) {
+                const timePassed = nowSongTime >= (pianistSession.lastNoteTargetTime + PIANIST_WINDOWS.POOR);
+                const safeAudioEnded = pBgm && pBgm.ended && (nowSongTime >= pianistSession.lastNoteTargetTime * 0.85);
+                if (allDone || timePassed || safeAudioEnded) {
                     trigger3SecFadeOutAndEnd(pianistSession, pBgm);
                 }
             }
@@ -2942,7 +3089,6 @@
         const handleTouch = (zone, e) => { e.preventDefault(); if (config.players === 1) handleInput(1); else handleInput(zone); };
         window.addEventListener('keydown', e => {
             const code = e.code;
-            // 在主選單且位於「藍循演奏家(測試版)」分頁時，支援鍵盤左右方向鍵切換樂曲唱片
             if (gameState === 'MENU' && activeMainTab === 'pianist' && !document.getElementById('pianist-settings-overlay').classList.contains('active')) {
                 if (code === 'ArrowLeft') { e.preventDefault(); changePianistSong(-1); return; }
                 if (code === 'ArrowRight') { e.preventDefault(); changePianistSong(1); return; }
